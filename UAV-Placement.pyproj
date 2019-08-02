@@ -25,7 +25,6 @@
     <Compile Include="get_location.py" />
     <Compile Include="loadtexture.py" />
     <Compile Include="particle.py" />
-    <Compile Include="PythonTest.py" />
     <Compile Include="shaderProg.py" />
     <Compile Include="UAV_Placement.py" />
   </ItemGroup>
