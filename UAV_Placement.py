@@ -346,6 +346,7 @@ def timerProc(id):
 #    glutTimerFunc(1000, timerProc, 1)
 
 
+
 def main():
     global UAV_path_list
     planningUAV(user_path_list,UAV_path_list)
