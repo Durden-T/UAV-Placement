@@ -64,6 +64,7 @@ def localCover(center,firstL,secondL):
                 #距离大于2倍半径 无法覆盖
                 if distance(second,first) > 2 * UAVradius:
                     secondL.remove(second)
+
         for user in secondL.copy():
             #能够被覆盖
             if distance(user,center) < UAVradius:
@@ -75,7 +76,7 @@ def localCover(center,firstL,secondL):
         k = None
         t = 0
         for user in secondL:
-            t = distance(user,u)
+            t = distance(user,center)
             if t < min:
                 k = user
                 min = t
