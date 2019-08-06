@@ -83,7 +83,7 @@ def localCover(center,firstL,secondL):
         #此时k为距离center最近的点
         firstL.append(k)
         #先将k放入firstL中，调用oneCenter尝试观察：能否将firstL全部覆盖
-        if oneCenter(firstL,center):
+        if oneCenter(firstL,center) <= UAVradius:
             #此时k已在firstL中，把k从secondL中删去，继续循环
             secondL.remove(k)
         else:
@@ -93,8 +93,8 @@ def localCover(center,firstL,secondL):
 
 
         #向量OA叉积向量OB。大于0表示从OA到OB为逆时针旋转
-def cross(o,a,b):
-    return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+def cross(center,a,b):
+    return (a[0] - center[0]) * (b[1] - center[1]) - (a[1] - center[1]) * (b[0] - center[0])
 
 #用以找出最低最左边的点
 def compare_position(a,b):
@@ -127,37 +127,36 @@ def convexHull(users,outs):
 
 #获取i,j,k的外接圆,返回圆心,解三元二次方程
 def getCentre(i,j,k):
-    a,b,c,d=j[0]-i[0],j[1]-i[1],k[0]-j[0],k[1]-j[1]
-    e,f=j[0]**0.5+j[1]**0.5-i[0]**0.5-i[1]**0.5,k[0]**0.5+k[1]**0.5-j[0]**0.5-j[1]**0.5
-    return [(f*b-e*d)/(c*b-a*d)/2.0,(a*f-e*c)/(a*d-b*c)/2]
+    a,b,c,d = j[0] - i[0],j[1] - i[1],k[0] - j[0],k[1] - j[1]
+    e,f = j[0] ** 0.5 + j[1] ** 0.5 - i[0] ** 0.5 - i[1] ** 0.5,k[0] ** 0.5 + k[1] ** 0.5 - j[0] ** 0.5 - j[1] ** 0.5
+    return [(f * b - e * d) / (c * b - a * d) / 2.0,(a * f - e * c) / (a * d - b * c) / 2]
 
 
-
+#放置中心点，返回半径
 #最小圆覆盖问题 见https://blog.csdn.net/wu_tongtong/article/details/79362339
-#随机增量法 时空复杂度均为O(n)
+#随机增量法 时空复杂度均为O(n)(玄学)
 def oneCenter(points,center):
-    pass
     #随机化
     shuffle(users)
-    #o,r分别为圆心，半径
-    o,r = points[0],0
+    #center,radius分别为圆心，半径
+    center,radius = points[0],0
     for i in range(1,len(points)):
         #i不在当前圆内,通过精度比较，差距在1eps内可通过
-        if distance(o,points[i]) - r > eps:
+        if distance(center,points[i]) - radius > eps:
             #当前圆变为以i为圆心，枚举第二个点j
-            o,r = points[i],0
+            center,radius = points[i],0
             for j in range(i):
                 #j不在当前圆内
-                if distance(o,points[j]) - r > eps:
+                if distance(center,points[j]) - radius > eps:
                     #当前圆变为以i,j为直径的圆，枚举第三个点k
-                    o = [(points[i][0] + points[j][0]) / 2.0,(points[i][1] + points[j][1]) / 2.0]
-                    r = distance(points[i],points[j]) / 2.0
+                    center = [(points[i][0] + points[j][0]) / 2.0,(points[i][1] + points[j][1]) / 2.0]
+                    radius = distance(points[i],points[j]) / 2.0
                     for k in range(j):
-                        if distance(o,points[k]) - r > eps:
+                        if distance(center,points[k]) - radius > eps:
                             #当前圆变为i,j,k的外接圆
-                            o = getCentre(points[i],points[j],points[k])
-                            r = distance(points[i],o)
-
+                            center = getCentre(points[i],points[j],points[k])
+                            radius = distance(points[i],center)
+    return radius
 
 def make_plane(plane):
     plane.move_active += 1
@@ -402,7 +401,6 @@ def timerProc(id):
 #        people_list[index].move_location(people_list[index].x,
 #        people_list[index].z, float(i[0]) / 120 - 5, float(i[1]) / 120 - 5)
 #    glutTimerFunc(1000, timerProc, 1)
-
 def main():
     global UAV_path_list
     planningUAV(user_path_list,UAV_path_list)
