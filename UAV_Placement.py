@@ -10,9 +10,9 @@ import loadtexture
 import numpy as ny
 import particle
 from get_location import UAV_path_list,user_path_list
-
+import random
 window = None
-
+eps = 1e-6
 
 #UAV覆盖半径
 UAVradius = 30
@@ -64,7 +64,6 @@ def localCover(center,firstL,secondL):
                 #距离大于2倍半径 无法覆盖
                 if distance(second,first) > 2 * UAVradius:
                     secondL.remove(second)
-
         for user in secondL.copy():
             #能够被覆盖
             if distance(user,center) < UAVradius:
@@ -92,14 +91,72 @@ def localCover(center,firstL,secondL):
             firstL.remove(k)
             return
 
+
+        #向量OA叉积向量OB。大于0表示从OA到OB为逆时针旋转
+def cross(o,a,b):
+    return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+
+#用以找出最低最左边的点
+def compare_position(a,b):
+    return (a[1] < b[1]) or (a[1] == b[1] and a[0] < b[0])
+
+#小于。以people_list[0]当中心点做角度排序，角度由小排到大（即逆时针方向）。
+#角度相同時，距离中心点较近的点排前面。
+def compare_angle(a,b):
+    global people_list
+    c = cross(people_list[0],a,b)
+    return c > 0 or (c == 0 and distance(people_list[0],a) < distance(people_list[0],b))
+
 #解决凸包问题
 #outs 凸包位置list
+#Graham's Scan算法
 def convexHull(users,outs):
-    pass
+    MinIndex = users.index(min(users,key = compare_position))
+    #用最低最左边的点为起点
+    users[0] , users[MinIndex] = users[MinIndex] , users[0]
+    #按角度排序
+    users.sort(key=compare_angle)
+    # m为凸包顶点数目
+    m = 0
+    for i in range(len(users)):
+        #擦除凹陷的点
+        while (m >= 2 and cross(outs[m - 2],outs[m - 1],users[i]) <= 0):
+            m = m - 1
+        outs[m] = users[i]
+        m = m + 1
 
-def oneCenter(users,center):
-    pass
+#获取i,j,k的外接圆,返回圆心,解三元二次方程
+def getCentre(i,j,k):
+    a,b,c,d=j[0]-i[0],j[1]-i[1],k[0]-j[0],k[1]-j[1]
+    e,f=j[0]**0.5+j[1]**0.5-i[0]**0.5-i[1]**0.5,k[0]**0.5+k[1]**0.5-j[0]**0.5-j[1]**0.5
+    return [(f*b-e*d)/(c*b-a*d)/2.0,(a*f-e*c)/(a*d-b*c)/2]
 
+
+
+#最小圆覆盖问题 见https://blog.csdn.net/wu_tongtong/article/details/79362339
+#随机增量法 时空复杂度均为O(n)
+def oneCenter(points,center):
+    pass
+    #随机化
+    shuffle(users)
+    #o,r分别为圆心，半径
+    o,r = points[0],0
+    for i in range(1,len(points)):
+        #i不在当前圆内,通过精度比较，差距在1eps内可通过
+        if distance(o,points[i]) - r > eps:
+            #当前圆变为以i为圆心，枚举第二个点j
+            o,r = points[i],0
+            for j in range(i):
+                #j不在当前圆内
+                if distance(o,points[j]) - r > eps:
+                    #当前圆变为以i,j为直径的圆，枚举第三个点k
+                    o = [(points[i][0] + points[j][0]) / 2.0,(points[i][1] + points[j][1]) / 2.0]
+                    r = distance(points[i],points[j]) / 2.0
+                    for k in range(j):
+                        if distance(o,points[k]) - r > eps:
+                            #当前圆变为i,j,k的外接圆
+                            o = getCentre(points[i],points[j],points[k])
+                            r = distance(points[i],o)
 
 
 def make_plane(plane):
@@ -345,8 +402,6 @@ def timerProc(id):
 #        people_list[index].move_location(people_list[index].x,
 #        people_list[index].z, float(i[0]) / 120 - 5, float(i[1]) / 120 - 5)
 #    glutTimerFunc(1000, timerProc, 1)
-
-
 
 def main():
     global UAV_path_list
