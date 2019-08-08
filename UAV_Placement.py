@@ -7,18 +7,18 @@ import common
 import sys
 import shaderProg
 import loadtexture
-import numpy as ny
+import numpy as np
 import particle
 from get_location import UAV_path_list,user_path_list
 import random
 window = None
 eps = 1e-6
-
+xAXIS = np.array([1,0])
 #UAV覆盖半径
 UAVradius = 30
 # 飞机高度
 plane_height = 2.6
-# 地图长宽
+# 地图p.长宽
 plane_size = 110
 
 plane_list = []
@@ -55,7 +55,7 @@ def difference(a,b):
 #users 用户位置list UAVs 无人机位置list
 def planningUAV(users,UAVs):
     users_un = users
-    m=1
+    m = 1
     #当仍存在未被覆盖的用户时
     while users_un:
         users_un_bo = [] #未被覆盖的边界点
@@ -67,7 +67,7 @@ def planningUAV(users,UAVs):
         convexHull(users_un,users_un_bo)
         users_un_in = difference(users_un,users_un_bo)
 
-        if m==1 :
+        if m == 1 :
             center = random.choice(users_un_bo)
         center_index = users_un_bo.index(center) #用于确认下一个center的选择
         users_bo = [center] #当前情况下覆盖的边界点
@@ -134,19 +134,19 @@ def localCover(center,firstL,secondL):
 
 
         #向量OA叉积向量OB。大于0表示从OA到OB为逆时针旋转
-def cross(center,a,b):
-    return (a[0] - center[0]) * (b[1] - center[1]) - (a[1] - center[1]) * (b[0] - center[0])
+#def cross(center,a,b):
+    #return (a[0] - center[0]) * (b[1] - center[1]) - (a[1] - center[1]) * (b[0] - center[0])
 
 #用以找出最低最左边的点
-def compare_position(a,b):
-    return (a[1] < b[1]) or (a[1] == b[1] and a[0] < b[0])
+def compare_position(a):
+    return [a[1],a[0]]
 
 #小于。以people_list[0]当中心点做角度排序，角度由小排到大（即逆时针方向）。
 #角度相同時，距离中心点较近的点排前面。
-def compare_angle(a,b):
+def compare_angle(a):
     global people_list
-    c = cross(people_list[0],a,b)
-    return c > 0 or (c == 0 and distance(people_list[0],a) < distance(people_list[0],b))
+    cos_theta = np.arccos(xAXIS.dot(a) / np.linalg.norm(xAXIS) * np.linalg.norm(a))
+    return [cos_theta,distance([people_list[0].x,people_list[0].z],a)]
 
 #解决凸包问题
 #outs 凸包位置list
@@ -392,9 +392,9 @@ def DrawGLScene():
 
 
 def getMVP(x, z):
-    v = ny.array(glGetFloatv(GL_MODELVIEW_MATRIX), ny.float32)
-    p = ny.array(glGetFloatv(GL_PROJECTION_MATRIX), ny.float32)
-    m = ny.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [x, 0, z, 1]], ny.float32)
+    v = np.array(glGetFloatv(GL_MODELVIEW_MATRIX), np.float32)
+    p = np.array(glGetFloatv(GL_PROJECTION_MATRIX), np.float32)
+    m = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [x, 0, z, 1]], np.float32)
     #print(m)
     # glUniformMatrix4fv函数向其传递数据。
     # location：指明要更改的uniform变量的位置
