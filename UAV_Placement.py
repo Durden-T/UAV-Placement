@@ -44,9 +44,50 @@ x = 0
 z = 0
 
 
+#用于求差集
+def difference(a,b):
+    ret = []
+    for i in a :
+        if i not in b:
+            ret.append(i)
+    return ret
+
 #users 用户位置list UAVs 无人机位置list
 def planningUAV(users,UAVs):
-    pass
+    users_un = users
+    m=1
+    #当仍存在未被覆盖的用户时
+    while users_un:
+        users_un_bo = [] #未被覆盖的边界点
+        users_un_in = []
+        users_new = [] #刚被覆盖的点
+        users_bo = [] #已被覆盖的边界点
+
+        # 由未被覆盖的用户来重新构造新的边界线。
+        convexHull(users_un,users_un_bo)
+        users_un_in = difference(users_un,users_un_bo)
+
+        if m==1 :
+            center = random.choice(users_un_bo)
+        center_index = users_un_bo.index(center) #用于确认下一个center的选择
+        users_bo = [center] #当前情况下覆盖的边界点
+        localCover(center,users_bo,difference(users_un_bo,users_bo))
+        users_new.append(users_bo)#此时为刚被覆盖的边界点
+        users_un_bo_new = difference(users_un_bo,users_bo) #更新未被覆盖的边界点
+
+        localCover(center,users_new,users_un_in) #调用完后new为刚被覆盖的所有点
+
+        m = m + 1
+        users_un = difference(users_un,users_new)
+        UAVs.append(center)
+
+        temp = center_index + 1
+        #在更新后的未被覆盖的边界点中选择一个临近旧center的点，作为新center。
+        while (temp % len(users_un_bo)) != center_index:
+            if users_un_bo[i] not in users_un_bo_new :
+                break #找到下一个点
+            else :
+                temp = temp + 1
 
 def distance(a,b):
     return ((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2) ** 0.5
@@ -65,7 +106,7 @@ def localCover(center,firstL,secondL):
                 if distance(second,first) > 2 * UAVradius:
                     secondL.remove(second)
         for user in secondL.copy():
-            #能够被覆盖
+            #能够被覆盖s
             if distance(user,center) < UAVradius:
                 firstL.append(user)
                 secondL.remove(user)
@@ -137,7 +178,7 @@ def getCentre(i,j,k):
 #随机增量法 时空复杂度均为O(n)(玄学)
 def oneCenter(points,center):
     #随机化
-    shuffle(users)
+    random.shuffle(users)
     #center,radius分别为圆心，半径
     center,radius = points[0],0
     for i in range(1,len(points)):
