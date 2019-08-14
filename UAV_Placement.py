@@ -16,7 +16,7 @@ window = None
 eps = 1e-6
 xAXIS = np.array([1,0])
 #UAV覆盖半径
-UAVradius = 200 
+UAVradius = 400 
 # 飞机高度
 plane_height = 2.6
 # 地图p.长宽
@@ -55,6 +55,7 @@ def difference(a,b):
 
 #users 用户位置list
 def planningUAV(users):
+    users.sort(key=compare_angle)
     UAVs = []
     users_un = users
     m = 1
@@ -70,7 +71,8 @@ def planningUAV(users):
         users_un_in = difference(users_un,users_un_bo)
 
         if m == 1 :
-            k = random.choice(users_un_bo)
+            #k = random.choice(users_un_bo)
+            k = users_un_bo[0]
         center_index = users_un_bo.index(k) #用于确认下一个center的选择
         users_bo = [k] #当前情况下覆盖的边界点
         center = localCover(k,users_bo,difference(users_un_bo,users_bo))
@@ -127,7 +129,6 @@ def localCover(center,firstL,secondL):
                 firstL.append(user)
                 secondL.remove(user)
 
-        #不需要排序，因为每次调用oneCenter后center位置会改变
         #MinIndex = users.index(min(users,key = compare_position))
         k = min(secondL,key=lambda x:distance(x,center),default=None)
         if k:
@@ -168,7 +169,7 @@ def convexHull(users):
     #用最低最左边的点为起点
     users[0] , users[MinIndex] = users[MinIndex] , users[0]
     #按角度排序
-    users.sort(key=compare_angle)
+    #users.sort(key=compare_angle)
     # m为凸包顶点数目
     m = 0
     for i in range(len(users)):
@@ -357,7 +358,8 @@ def DrawGLScene():
     #    dis = []
     #    #计算距离
     #    for _, pla in enumerate(plane_list):
-    #        dis.append((pla.x - peo.x) * (pla.x - peo.x) + (pla.z - peo.z) * (pla.z - peo.z))
+    #        dis.append((pla.x - peo.x) * (pla.x - peo.x) + (pla.z - peo.z) *
+    #        (pla.z - peo.z))
     #    # print(dis)
     #    #根据无人机与人的距离，选择距离最近的无人机连线，目前只有两架无人机
     #    if dis[0] < dis[1]:
@@ -478,7 +480,6 @@ def timerProc(id):
 #        people_list[index].move_location(people_list[index].x,
 #        people_list[index].z, float(i[0]) / 120 - 5, float(i[1]) / 120 - 5)
 #    glutTimerFunc(1000, timerProc, 1)
-
 def main():
     global UAV_path_list
     UAV_path_list = planningUAV(user_path_list)
