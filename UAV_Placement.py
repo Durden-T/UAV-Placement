@@ -11,11 +11,12 @@ import numpy as np
 import particle
 from get_location import UAV_path_list,user_path_list
 import random
+import copy
 window = None
 eps = 1e-6
 xAXIS = np.array([1,0])
 #UAV覆盖半径
-UAVradius = 30
+UAVradius = 1000
 # 飞机高度
 plane_height = 2.6
 # 地图p.长宽
@@ -52,43 +53,57 @@ def difference(a,b):
             ret.append(i)
     return ret
 
-#users 用户位置list UAVs 无人机位置list
-def planningUAV(users,UAVs):
+#users 用户位置list
+def planningUAV(users):
+    UAVs = []
     users_un = users
     m = 1
     #当仍存在未被覆盖的用户时
-    while users_un:
-        users_un_bo = [] #未被覆盖的边界点
+    while users_un:     
+        #users_un_bo = [] #未被覆盖的边界点
         users_un_in = []
         users_new = [] #刚被覆盖的点
         users_bo = [] #已被覆盖的边界点
 
         # 由未被覆盖的用户来重新构造新的边界线。
-        convexHull(users_un,users_un_bo)
+        users_un_bo = convexHull(users_un)
         users_un_in = difference(users_un,users_un_bo)
 
         if m == 1 :
-            center = random.choice(users_un_bo)
-        center_index = users_un_bo.index(center) #用于确认下一个center的选择
-        users_bo = [center] #当前情况下覆盖的边界点
-        localCover(center,users_bo,difference(users_un_bo,users_bo))
-        users_new.append(users_bo)#此时为刚被覆盖的边界点
+            k = random.choice(users_un_bo)
+        center_index = users_un_bo.index(k) #用于确认下一个center的选择
+        users_bo = [k] #当前情况下覆盖的边界点
+        center = localCover(k,users_bo,difference(users_un_bo,users_bo))
+        #users_new = users_bo #此时为刚被覆盖的边界点
         users_un_bo_new = difference(users_un_bo,users_bo) #更新未被覆盖的边界点
 
-        localCover(center,users_new,users_un_in) #调用完后new为刚被覆盖的所有点
+        center = localCover(center,users_bo,users_un_in) #调用完后new为刚被覆盖的所有点
 
         m = m + 1
-        users_un = difference(users_un,users_new)
+        users_un = difference(users_un,users_bo)
         UAVs.append(center)
 
-        temp = center_index + 1
-        #在更新后的未被覆盖的边界点中选择一个临近旧center的点，作为新center。
-        while (temp % len(users_un_bo)) != center_index:
-            if users_un_bo[i] not in users_un_bo_new :
-                break #找到下一个点
-            else :
-                temp = temp + 1
+        temp = (center_index + 1) % len(users_un_bo)
 
+        #在更新后的未被覆盖的边界点中选择一个临近旧center的点，作为新center。
+        while temp != center_index:
+            if users_un_bo[temp] in users_un_bo_new:
+                break #找到下一个点
+            else:
+                temp = (temp + 1) % len(users_un_bo)
+
+        k = users_un_bo[temp]
+
+    return UAVs
+        #temp = center_index + 1
+        ##在更新后的未被覆盖的边界点中选择一个临近旧center的点，作为新center。
+        #while (temp % len(users_un_bo)) != center_index:
+        #    if users_un_bo[temp% len(users_un_bo)] not in users_un_bo_new:
+        #        break #找到下一个点
+        #    else :
+        #        temp = temp + 1
+
+        #center = users_un_bo[temp % len(users_un_bo)]
 def distance(a,b):
     return ((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2) ** 0.5
 
@@ -112,30 +127,25 @@ def localCover(center,firstL,secondL):
                 secondL.remove(user)
 
         #不需要排序，因为每次调用oneCenter后center位置会改变
-        min = float('inf')
-        k = None
-        t = 0
-        for user in secondL:
-            t = distance(user,center)
-            if t < min:
-                k = user
-                min = t
-
-        #此时k为距离center最近的点
-        firstL.append(k)
-        #先将k放入firstL中，调用oneCenter尝试观察：能否将firstL全部覆盖
-        if oneCenter(firstL,center) <= UAVradius:
-            #此时k已在firstL中，把k从secondL中删去，继续循环
-            secondL.remove(k)
-        else:
-            #无法满足当前条件，将k从firstL中删去，返回
-            firstL.remove(k)
-            return
-
-
+        #MinIndex = users.index(min(users,key = compare_position))
+        k = min(secondL,key=lambda x:distance(x,center),default=None)
+        if k:
+            #此时k为距离center最近的点
+            firstL.append(k)
+            #先将k放入firstL中，调用oneCenter尝试观察：能否将firstL全部覆盖
+            ans = oneCenter(firstL)
+            if  ans[1] <= UAVradius:
+                #此时k已在firstL中，把k从secondL中删去，继续循环
+                secondL.remove(k)
+                center = ans[0]
+            else:
+                #无法满足当前条件，将k从firstL中删去，返回
+                firstL.remove(k)
+                break
+    return center
         #向量OA叉积向量OB。大于0表示从OA到OB为逆时针旋转
-#def cross(center,a,b):
-    #return (a[0] - center[0]) * (b[1] - center[1]) - (a[1] - center[1]) * (b[0] - center[0])
+def cross(center,a,b):
+    return (a[0] - center[0]) * (b[1] - center[1]) - (a[1] - center[1]) * (b[0] - center[0])
 
 #用以找出最低最左边的点
 def compare_position(a):
@@ -145,13 +155,14 @@ def compare_position(a):
 #角度相同時，距离中心点较近的点排前面。
 def compare_angle(a):
     global people_list
-    cos_theta = np.arccos(xAXIS.dot(a) / np.linalg.norm(xAXIS) * np.linalg.norm(a))
+    cos_theta = np.arccos(xAXIS.dot(a) / (np.linalg.norm(xAXIS) * np.linalg.norm(a)))
     return [cos_theta,distance([people_list[0].x,people_list[0].z],a)]
 
 #解决凸包问题
-#outs 凸包位置list
+#users 用户位置list
 #Graham's Scan算法
-def convexHull(users,outs):
+def convexHull(users):
+    outs = [[.0,.0]] * len(users)
     MinIndex = users.index(min(users,key = compare_position))
     #用最低最左边的点为起点
     users[0] , users[MinIndex] = users[MinIndex] , users[0]
@@ -165,6 +176,7 @@ def convexHull(users,outs):
             m = m - 1
         outs[m] = users[i]
         m = m + 1
+    return [user for user in outs if user != [.0,.0]]
 
 #获取i,j,k的外接圆,返回圆心,解三元二次方程
 def getCentre(i,j,k):
@@ -176,9 +188,9 @@ def getCentre(i,j,k):
 #放置中心点，返回半径
 #最小圆覆盖问题 见https://blog.csdn.net/wu_tongtong/article/details/79362339
 #随机增量法 时空复杂度均为O(n)(玄学)
-def oneCenter(points,center):
+def oneCenter(points):
     #随机化
-    random.shuffle(users)
+    random.shuffle(points)
     #center,radius分别为圆心，半径
     center,radius = points[0],0
     for i in range(1,len(points)):
@@ -197,8 +209,8 @@ def oneCenter(points,center):
                             #当前圆变为i,j,k的外接圆
                             center = getCentre(points[i],points[j],points[k])
                             radius = distance(points[i],center)
-    return radius
-
+    return [center,radius]
+    #return [center,radius]
 def make_plane(plane):
     plane.move_active += 1
     if plane.move_active == 250:
@@ -444,7 +456,7 @@ def timerProc(id):
 #    glutTimerFunc(1000, timerProc, 1)
 def main():
     global UAV_path_list
-    planningUAV(user_path_list,UAV_path_list)
+    UAV_path_list = planningUAV(user_path_list)
     #无人机初始位置
     for i in range(len(UAV_path_list)):
         plane_list.append(common.sphere(16, 16, 0.1, 0, 0))
