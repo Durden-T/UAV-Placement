@@ -16,7 +16,7 @@ class common:
 #球的实现
 class sphere(common):
 
-    #方向 x轴z轴水平面 y轴垂直
+    #方向 x轴z轴水平面 y轴垂直??? xz 好像不是这样 靠
     def __init__(this,rings,segments,radius, x, z):
         this.rings = rings
         this.segments = segments

@@ -16,7 +16,7 @@ window = None
 eps = 1e-6
 xAXIS = np.array([1,0])
 #UAV覆盖半径
-UAVradius = 1000
+UAVradius = 200 
 # 飞机高度
 plane_height = 2.6
 # 地图p.长宽
@@ -120,6 +120,7 @@ def localCover(center,firstL,secondL):
                 #距离大于2倍半径 无法覆盖
                 if distance(second,first) > 2 * UAVradius:
                     secondL.remove(second)
+                    break
         for user in secondL.copy():
             #能够被覆盖s
             if distance(user,center) < UAVradius:
@@ -347,25 +348,25 @@ def DrawGLScene():
     glUniform1i(shaderall.planeProgram.tex0, 0)
     plane.draw()
 
-    glUseProgram(0)
-    glColor3f(0.9, 0.9, 0.9)
-    glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, ord('a'))
-    glLineWidth(2)
-    glBegin(GL_LINES)
-    for peo in people_list:
-        dis = []
-        #计算距离
-        for _, pla in enumerate(plane_list):
-            dis.append((pla.x - peo.x) * (pla.x - peo.x) + (pla.z - peo.z) * (pla.z - peo.z))
-        # print(dis)
-        #根据无人机与人的距离，选择距离最近的无人机连线，目前只有两架无人机
-        if dis[0] < dis[1]:
-            glVertex3f(plane_list[0].x, 0.7 + plane_height, plane_list[0].z)
-            glVertex3f(peo.x, plane.getHeight(peo.x, peo.z) + 0.1, peo.z)
-        else:
-            glVertex3f(plane_list[1].x, 0.7 + plane_height, plane_list[1].z)
-            glVertex3f(peo.x, plane.getHeight(peo.x, peo.z) + 0.1, peo.z)
-    glEnd()
+    #glUseProgram(0)
+    #glColor3f(0.9, 0.9, 0.9)
+    #glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, ord('a'))
+    #glLineWidth(2)
+    #glBegin(GL_LINES)
+    #for peo in people_list:
+    #    dis = []
+    #    #计算距离
+    #    for _, pla in enumerate(plane_list):
+    #        dis.append((pla.x - peo.x) * (pla.x - peo.x) + (pla.z - peo.z) * (pla.z - peo.z))
+    #    # print(dis)
+    #    #根据无人机与人的距离，选择距离最近的无人机连线，目前只有两架无人机
+    #    if dis[0] < dis[1]:
+    #        glVertex3f(plane_list[0].x, 0.7 + plane_height, plane_list[0].z)
+    #        glVertex3f(peo.x, plane.getHeight(peo.x, peo.z) + 0.1, peo.z)
+    #    else:
+    #        glVertex3f(plane_list[1].x, 0.7 + plane_height, plane_list[1].z)
+    #        glVertex3f(peo.x, plane.getHeight(peo.x, peo.z) + 0.1, peo.z)
+    #glEnd()
     #sphare
 
     glUseProgram(shaderall.updateProgram)
@@ -381,6 +382,29 @@ def DrawGLScene():
     #glUniform3f(shaderall.particleProgram.sphere,eyeLoc[0],sph.radius,eyeLoc[2])
     #ps.render(shaderall.particleProgram)
     #glUseProgram(0)
+
+    glUseProgram(0)
+    glColor3f(0.9, 0.9, 0.9)
+    glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, ord('a'))
+    glLineWidth(2)
+    glBegin(GL_LINES)
+    for peo in people_list:
+        dis = []
+        #计算距离
+        for _, pla in enumerate(plane_list):
+            dis.append((pla.x - peo.x) * (pla.x - peo.x) + (pla.z - peo.z) * (pla.z - peo.z))
+        # print(dis)
+        #根据无人机与人的距离，选择距离最近的无人机连线，目前只有两架无人机
+        #if dis[0] < dis[1]:
+        #    glVertex3f(plane_list[0].x, 0.7 + plane_height, plane_list[0].z)
+        #    glVertex3f(peo.x, plane.getHeight(peo.x, peo.z) + 0.1, peo.z)
+        #else:
+        #    glVertex3f(plane_list[1].x, 0.7 + plane_height, plane_list[1].z)
+        #    glVertex3f(peo.x, plane.getHeight(peo.x, peo.z) + 0.1, peo.z)
+        MinIndex = dis.index(min(dis))
+        glVertex3f(plane_list[MinIndex].x, 0.7 + plane_height, plane_list[MinIndex].z)
+        glVertex3f(peo.x, plane.getHeight(peo.x, peo.z) + 0.1, peo.z)
+    glEnd()
 
     # 设置激活的纹理单元
     glActiveTexture(GL_TEXTURE0)
@@ -454,6 +478,7 @@ def timerProc(id):
 #        people_list[index].move_location(people_list[index].x,
 #        people_list[index].z, float(i[0]) / 120 - 5, float(i[1]) / 120 - 5)
 #    glutTimerFunc(1000, timerProc, 1)
+
 def main():
     global UAV_path_list
     UAV_path_list = planningUAV(user_path_list)
@@ -537,7 +562,6 @@ def main():
     hightimage = loadtexture.Texture.loadterrain("hight.gif")
     # image = open("ground2.bmp").convert("RGBA")
     plane.setHeight(hightimage)
-
     glutMainLoop()
 
 main()
