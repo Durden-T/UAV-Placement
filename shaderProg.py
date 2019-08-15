@@ -7,12 +7,13 @@ from OpenGL.GL import shaders
 from ctypes import *
 from OpenGL.GL.shaders import ShaderProgram
 
+
 plane_v = """
         //#version 330 compatibility
         #version 120
         uniform sampler2D tex1;       
         void main() 
-        {
+        {            
             gl_TexCoord[0] = gl_MultiTexCoord0; 
 		    vec4 v = vec4(gl_Vertex);		
 		    //v.y = texture2D(tex1, gl_TexCoord[0].st).r/256.0;
@@ -45,7 +46,7 @@ update_v = """
         uniform mat4 pMatrix;
         out vec4 o_color;          
         void main() 
-        {      
+        {
 		    vec4 pos = vec4(vectpos,1.0);              
             vec2 uv = vec2(xz/vec2(xw,yw) + vec2(0.5,0.5));
             uv.y = 1.0 - uv.y;

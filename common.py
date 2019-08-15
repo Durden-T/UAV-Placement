@@ -8,12 +8,13 @@ from OpenGL.GLUT import *
 import numpy as np
 #Python Imaging Library (PIL)
 
-class base:
+class common:
     #判断是否已初始化
     bCreate = False
 
 #球的实现
-class sphere(base):
+class sphere(common):
+
     #方向 x轴z轴水平面 y轴垂直??? xz 好像不是这样 靠
     def __init__(this,rings,segments,radius, x, z):
         this.rings = rings
@@ -35,7 +36,6 @@ class sphere(base):
     def createVAO(this):
         vdata = []
         vindex = []
-
         for y in range(this.rings):
             phi = (float(y) / (this.rings - 1)) * math.pi
             for x in range(this.segments):
@@ -61,6 +61,7 @@ class sphere(base):
         this.vboLength = this.segments * this.rings
         this.eboLength = len(vindex)
         this.bCreate = True
+
     #没用到
     #def drawShader(this,vi,ni,ei):
     #    if this.bCreate == False:
@@ -126,7 +127,7 @@ class sphere(base):
     #        this.move(4)
 
 
-class plane(base):
+class plane(common):
 
     def __init__(this,xres,yres,xscale,yscale):
         this.xr,this.yr,this.xc,this.yc = xres,yres,xscale,yscale
@@ -140,6 +141,7 @@ class plane(base):
         #print (helfx,helfy)
         vdata = []
         vindex = []
+
 
         for y in range(this.yr):
             for x in range(this.xr):

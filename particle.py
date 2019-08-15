@@ -8,8 +8,8 @@ from PIL.Image import *
 import numpy as np
 import random
 import time
+import common
 
-import base
 class particleSystem(object):
 
     def __init__(this,len=1):
@@ -20,11 +20,11 @@ class particleSystem(object):
         this.center = 0.0,0.0
         this.currenttime = 0.0
         this.height = 2.0
-        this.initHelper()
+        this.init1()
         this.createVAO()
 
 
-    def initHelper(this):
+    def init1(this):
         #pos(x,y,z),vel(x,y,z),time
         for i in range(this.length):
             ind = i * 7
@@ -41,8 +41,8 @@ class particleSystem(object):
 
     def createVAO(this):
         this.currvbo = vbo.VBO(np.array(this.cparticles,'f'))
-        this.nextvbo = vbo.VBO(np.array(this.nparticles,'f'))     
-        
+        this.nextvbo = vbo.VBO(np.array(this.nparticles,'f'))           
+
 
     def render(this,program):
         ind = this.index % 2  
@@ -63,7 +63,7 @@ class particleSystem(object):
         glDrawArrays(GL_POINTS, 0, this.length)
         outvbo.unbind()  
         this.index = this.index + 1 
-        this.currenttime = time.time()     
+        this.currenttime = time.time()      
         
 
     def update(this,fvbo,svbo):
@@ -96,12 +96,11 @@ class particleSystem(object):
 
 
 class gpgpubasic(object):
+
     """description of class"""
     #def __init__(this,col,row,data=[0.1,0.2,0.3,0.4]):
-
     def __init__(this,*args):
         this.imageFormat = GL_FLOAT
-
         if len(args) == 1 :
             if isinstance(args[0],Image):
                 image = args[0]
@@ -109,12 +108,11 @@ class gpgpubasic(object):
                 this.height = image.size[1]
                 this.data = image.im
                 this.imageFormat = GL_UNSIGNED_BYTE
-
             if isinstance(args[0],list):
                 listf = args[0]
                 this.width = len(listf) if len(listf) > 0 else 1
                 this.height = 1
-                this.data = listf    
+                this.data = listf     
                 
         if len(args) == 3:
             this.width = int(args[0])
@@ -127,7 +125,6 @@ class gpgpubasic(object):
                 index = i * this.width + j
                 f4 = this.data[index] if index < len(this.data) else float(j) / float(this.width)
                 r,g,b,a = 0.0,0.0,0.0,0.0
-
                 if isinstance(f4,tuple):
                     if len(f4) == 2:
                         r,g = f4
@@ -137,7 +134,6 @@ class gpgpubasic(object):
                         r,g,b,a = f4                           
                 else:
                     r = f4
-
                 this.imagedata.append(r)                          
                 this.imagedata.append(g)
                 this.imagedata.append(b)
@@ -173,8 +169,6 @@ class gpgpubasic(object):
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, this.width, this.height, 0, GL_RGBA,this.imageFormat, this.imagedata)
     #cpu to gpu,and gpu compute result in fbo and fbotext.(cpu -(fbodata)> gpu
     #-(fbotext)> cpu)
-
-
     def renderFBO(this,shader):
         glDisable(GL_DEPTH_TEST)
         glBindFramebuffer(GL_FRAMEBUFFER,this.fbo)
@@ -257,7 +251,6 @@ class gpgpupingpong(object):
     def __init__(this,*args):
         this.imageFormat = GL_FLOAT
         this.index = 0
-
         if len(args) == 1 :
             if isinstance(args[0],Image):
                 image = args[0]
@@ -265,12 +258,11 @@ class gpgpupingpong(object):
                 this.height = image.size[1]
                 this.data = image.im
                 this.imageFormat = GL_UNSIGNED_BYTE
-
             if isinstance(args[0],list):
                 listf = args[0]
                 this.width = len(listf) if len(listf) > 0 else 1
                 this.height = 1
-                this.data = listf    
+                this.data = listf  
                 
         if len(args) == 3:
             this.width = int(args[0])
@@ -366,7 +358,6 @@ class gpgpupingpong(object):
             data = glReadPixels(0, 0, this.width, this.height,GL_RGBA,GL_FLOAT)  
             #print ("fbo 0:",len(data),data[5])#,data[1],data[2]
             glBindFramebuffer(GL_FRAMEBUFFER,0) 
-
         else :
             glBindFramebuffer(GL_FRAMEBUFFER,this.fbo)
             glReadBuffer(GL_COLOR_ATTACHMENT1_EXT)
