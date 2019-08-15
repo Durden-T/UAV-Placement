@@ -4,7 +4,6 @@ from PIL.Image import *
 from itertools import *
 
 class Texture:
-
     @staticmethod
     def loadmap(fileName,format="RGBA"):
         image = open(fileName).convert(format)
@@ -24,8 +23,6 @@ class Texture:
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
         glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL) 
         return textid
-
-
     @staticmethod
     def loadterrain(fileName,format="L"):
         image = open(fileName).convert("L")	

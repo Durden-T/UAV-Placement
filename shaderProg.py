@@ -7,25 +7,22 @@ from OpenGL.GL import shaders
 from ctypes import *
 from OpenGL.GL.shaders import ShaderProgram
 
-
-plane_v = """
+UAV_v = """
         //#version 330 compatibility
         #version 120
         uniform sampler2D tex1;       
-        void main() 
-        {            
+        void main() {            
             gl_TexCoord[0] = gl_MultiTexCoord0; 
 		    vec4 v = vec4(gl_Vertex);		
 		    //v.y = texture2D(tex1, gl_TexCoord[0].st).r/256.0;
 		    gl_Position = gl_ModelViewProjectionMatrix * v;
         }"""
 
-plane_f = """
+UAV_f = """
         //#version 330 compatibility
         #version 120
         uniform sampler2D tex0;
-        void main() 
-        {            
+        void main() {            
             vec4 color = texture2D(tex0, gl_TexCoord[0].st);//gl_TexCoord[0].st);vec2(0.3,0.3)
             gl_FragColor = color;//vec4( 0, 1, 0, 1 );//
         }"""
@@ -45,8 +42,7 @@ update_v = """
         uniform mat4 vMatrix;
         uniform mat4 pMatrix;
         out vec4 o_color;          
-        void main() 
-        {
+        void main() {      
 		    vec4 pos = vec4(vectpos,1.0);              
             vec2 uv = vec2(xz/vec2(xw,yw) + vec2(0.5,0.5));
             uv.y = 1.0 - uv.y;
@@ -60,8 +56,7 @@ update_f = """
         //#version 330 compatibility
         #version 330
         in vec4 o_color;  
-        void main() 
-        {            
+        void main() {            
             //vec4 color = texture2D(tex1, gl_TexCoord[0].st);
             gl_FragColor = o_color;// vec4( 0, 1, 0, 1 );
         }"""
@@ -81,8 +76,7 @@ update_v1 = """
         uniform mat4 vMatrix1;
         uniform mat4 pMatrix1;
         out vec4 o_color;          
-        void main() 
-        {      
+        void main() {      
 		    vec4 pos = vec4(vectpos1,1.0);              
             vec2 uv = vec2(xz1/vec2(xw1,yw1) + vec2(0.5,0.5));
             uv.y = 1.0 - uv.y;
@@ -96,8 +90,7 @@ update_f1 = """
         //#version 330 compatibility
         #version 330
         in vec4 o_color;  
-        void main() 
-        {            
+        void main() {            
             //vec4 color = texture2D(tex1, gl_TexCoord[0].st);
             gl_FragColor = o_color;// vec4( 0, 1, 0, 1 );
         }"""
@@ -106,8 +99,7 @@ gpgpu_v = """
         //#version 330 compatibility
         #version 130
         out vec4 pos;
-        void main() 
-        {  
+        void main() {  
             pos = vec4(gl_Vertex);
             //The following coding must be in fragment shader
             //vec2 xy = v.xy;
@@ -123,8 +115,7 @@ gpgpu_f = """
         uniform sampler2D tex0; 
         uniform float xw;
         uniform float yw;          
-        void main() 
-        {             
+        void main() {             
             vec2 xy = pos.xy;
             vec2 uv = vec2(xy/vec2(xw,yw)).xy;            
             vec4 o_color = texture2D(tex0, uv);// vec4(uv.x,uv.y, 0, 1 );//   
@@ -137,8 +128,7 @@ tf_v = """
         in float inValue;
         out float outValue;
         out float out2;
-        void main() 
-        {
+        void main() {
             outValue = inValue+3.0;
             out2 = 1.0;
         }"""
@@ -149,19 +139,18 @@ particle_v = """
         in vec3 vel;
         in float time;
         uniform float span;
-        uniform vec2 planeSacle;      
-        uniform sampler2D plane;
+        uniform vec2 UAVSacle;      
+        uniform sampler2D UAV;
         uniform vec3 sphere;
         uniform float live;
         out vec3 outpos;
         out vec3 outvel;
         out float outtime;
-        void main() 
-        {
+        void main() {
             outpos = pos + vel*span;
-            vec2 uv = vec2(pos.xz/planeSacle + vec2(0.5,0.5));
+            vec2 uv = vec2(pos.xz/UAVSacle + vec2(0.5,0.5));
             uv.y = 1.0 - uv.y;
-            float hight = texture2D(plane, uv).r;
+            float hight = texture2D(UAV, uv).r;
             vec3 tvel = vel;
             //sphere collision
             float radius = sphere.y;
@@ -190,15 +179,14 @@ particle_v = """
         }"""
 
 class allshader:
-
     def __init__(this):
-        this.planeProgram = shaders.compileProgram(shaders.compileShader(plane_v, GL_VERTEX_SHADER),
-            shaders.compileShader(plane_f, GL_FRAGMENT_SHADER)) 
+        this.UAVProgram = shaders.compileProgram(shaders.compileShader(UAV_v, GL_VERTEX_SHADER),
+            shaders.compileShader(UAV_f, GL_FRAGMENT_SHADER)) 
         #the parameter tex0 must be use in shaders,otherwise the
         #glGetUniformLocation get -1
-        this.planeProgram.tex0 = glGetUniformLocation(this.planeProgram,"tex0")
-        this.planeProgram.tex1 = glGetUniformLocation(this.planeProgram,"tex1")        
-        #print ("t0,t1:", this.planeProgram.tex0,this.planeProgram.tex1)
+        this.UAVProgram.tex0 = glGetUniformLocation(this.UAVProgram,"tex0")
+        this.UAVProgram.tex1 = glGetUniformLocation(this.UAVProgram,"tex1")        
+        #print ("t0,t1:", this.UAVProgram.tex0,this.UAVProgram.tex1)
 
         this.updateProgram = shaders.compileProgram(shaders.compileShader(update_v, GL_VERTEX_SHADER),
             shaders.compileShader(update_f, GL_FRAGMENT_SHADER))
@@ -246,8 +234,8 @@ class allshader:
         this.particleProgram.time = glGetAttribLocation(this.particleProgram,"time")
         this.particleProgram.span = glGetUniformLocation(this.particleProgram,"span")
         this.particleProgram.live = glGetUniformLocation(this.particleProgram,"live")
-        this.particleProgram.plane = glGetUniformLocation(this.particleProgram,"plane")
-        this.particleProgram.planeSacle = glGetUniformLocation(this.particleProgram,"planeSacle")
+        this.particleProgram.UAV = glGetUniformLocation(this.particleProgram,"UAV")
+        this.particleProgram.UAVSacle = glGetUniformLocation(this.particleProgram,"UAVSacle")
         #this.particleProgram.sphere = glGetUniformLocation(this.particleProgram,"sphere")
         
 

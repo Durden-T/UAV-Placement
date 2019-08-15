@@ -1,4 +1,5 @@
-﻿#sphere,plane,camera的定义与实现
+﻿#sphere,UAV,camera的定义与实现
+
 import math
 from OpenGL.GL import *
 from OpenGL.arrays import vbo
@@ -46,7 +47,6 @@ class sphere(common):
                 vdata.append(this.radius * math.sin(phi) * math.cos(theta))
                 vdata.append(this.radius * math.cos(phi))
                 vdata.append(this.radius * math.sin(phi) * math.sin(theta))
-
         for y in range(this.rings - 1):
             for x in range(this.segments - 1):
                 vindex.append((y + 0) * this.segments + x)
@@ -55,7 +55,6 @@ class sphere(common):
                 vindex.append((y + 1) * this.segments + x + 1)
                 vindex.append((y + 0) * this.segments + x + 1)
                 vindex.append((y + 0) * this.segments + x)
-
         this.vbo = vbo.VBO(np.array(vdata,'f'))
         this.ebo = vbo.VBO(np.array(vindex,'H'),target = GL_ELEMENT_ARRAY_BUFFER)
         this.vboLength = this.segments * this.rings
@@ -127,7 +126,7 @@ class sphere(common):
     #        this.move(4)
 
 
-class plane(common):
+class UAV(common):
 
     def __init__(this,xres,yres,xscale,yscale):
         this.xr,this.yr,this.xc,this.yc = xres,yres,xscale,yscale
@@ -150,7 +149,6 @@ class plane(common):
                 vdata.append(this.xc * float(x) - helfx)
                 vdata.append(0.)
                 vdata.append(this.yc * float(y) - helfy)
-
         for y in range(this.yr - 1):
             for x in range(this.xr - 1):
                 vindex.append((y + 0) * this.xr + x)
@@ -159,7 +157,6 @@ class plane(common):
                 vindex.append((y + 0) * this.xr + x + 1)
                 vindex.append((y + 1) * this.xr + x)
                 vindex.append((y + 1) * this.xr + x + 1)
-
         #print (len(vdata),len(vindex))
         this.data = vdata
         this.idata = vindex
@@ -173,7 +170,6 @@ class plane(common):
             this.eboLength = len(this.idata)
             this.bCreate = True
             #this.createVAO()
-
         this.vbo.bind()
         # 函数将会将会根据参数,激活各种顶点数组,并存储顶点
         glInterleavedArrays(GL_T2F_V3F,0,None)
@@ -190,7 +186,6 @@ class plane(common):
         #print "xr,yr",this.xr,this.yr
         lerp = lambda a,b,d:a * d + b * (1.0 - d)  
         fade = lambda t : t * t * (3.0 - 2.0 * t)  #t*t*t*(t*(t*6.0-15.0)+10.0)
-
         for y in range(this.yr):
             for x in range(this.xr):  
                 # y index location in this.data

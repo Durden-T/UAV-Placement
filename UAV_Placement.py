@@ -3,38 +3,36 @@ from OpenGL.GLUT import *
 from OpenGL.GLU import *
 from OpenGL.GL import shaders
 from PIL.Image import *
+import functools
+import sys
+import numpy as np
 import random
 import copy
-import sys
-import shaderProg
-import loadTexture
-import numpy as np
 import time
 import common
+import shaderProg
+import loadTexture
 import particle
-from get_location import UAVsLoc,usersLoc
-
+from get_location import *
 
 window = None
 eps = 1e-6
-xAXIS = np.array([1,0])
+datumPoint=[.0,.0]
 #UAV覆盖半径
-UAVradius = 200
+UAVradius = 0
 # 飞机高度
-UAVHeight = 2.6
+UAV_height = 2.6
 # 地图p.长宽
-plane_size = 110
+UAV_size = 120
+
 UAVs = []
 users = []
+UAVsLoc=[]
 
-
-#用户初始位置，从usersLoc中读取
-for index, i in enumerate(usersLoc):
-    users.append(common.sphere(16, 16, 0.1, i[0] / 120 - 5, i[1] / 120 - 5))
 
 camera = common.camera()
 # 地形
-plane = common.plane(plane_size,plane_size,0.1,0.1)
+UAV = common.UAV(UAV_size,UAV_size,0.1,0.1)
 #the shaderall,colorMap,hightMap Should be placed after gl init,otherwise all 0
 shaderall = None
 tf = None
@@ -55,10 +53,16 @@ def difference(a,b):
 
 #users 用户位置list
 def planningUAV(users):
-    users.sort(key=compare_angle)
-    UAVs = []
+    users.sort(key=functools.cmp_to_key(compare_angle))
+    for i in range(len(users)):
+        users[i].append(i)
+    k = users[0]
+    #for user in users:
+        #print(user[2])
+    #print('fuck')
+    UAVsLoc = []
     users_un = users
-    m = 1
+    #m = 1
     #当仍存在未被覆盖的用户时
     while users_un:     
         #users_un_bo = [] #未被覆盖的边界点
@@ -68,35 +72,44 @@ def planningUAV(users):
 
         # 由未被覆盖的用户来重新构造新的边界线。
         users_un_bo = convexHull(users_un)
+        #for user in users_un_bo:
+            #print(user[2])
+        #print('fuck')
         users_un_in = difference(users_un,users_un_bo)
 
-        if m == 1 :
+        #if m == 1 :
             #k = random.choice(users_un_bo)
-            k = users_un_bo[0]
-        center_index = users_un_bo.index(k) #用于确认下一个center的选择
+
+        #try:
+        #    center_index = users_un_bo.index(k) #用于确认下一个center的选择
+        #except ValueError:
+        #    print('fuck')
+        #    center_index = center_index + 1
         users_bo = [k] #当前情况下覆盖的边界点
         center = localCover(k,users_bo,difference(users_un_bo,users_bo))
         #users_new = users_bo #此时为刚被覆盖的边界点
         users_un_bo_new = difference(users_un_bo,users_bo) #更新未被覆盖的边界点
-
         center = localCover(center,users_bo,users_un_in) #调用完后new为刚被覆盖的所有点
-
-        m = m + 1
         users_un = difference(users_un,users_bo)
-        UAVs.append(center)
+        
+        #m = m + 1
+        
+        UAVsLoc.append(center)
 
-        temp = (center_index + 1) % len(users_un_bo)
 
         #在更新后的未被覆盖的边界点中选择一个临近旧center的点，作为新center。
-        while temp != center_index:
-            if users_un_bo[temp] in users_un_bo_new:
-                break #找到下一个点
-            else:
-                temp = (temp + 1) % len(users_un_bo)
 
-        k = users_un_bo[temp]
+        k=users_un[0] if users_un else None
 
-    return UAVs
+        #for user in users_un_bo_new:
+        #    if user[2] > k[2]:
+        #        k = user
+        #        break
+        #print(k[2])
+
+    for user in users:
+        user.pop()
+    return UAVsLoc
         #temp = center_index + 1
         ##在更新后的未被覆盖的边界点中选择一个临近旧center的点，作为新center。
         #while (temp % len(users_un_bo)) != center_index:
@@ -106,10 +119,8 @@ def planningUAV(users):
         #        temp = temp + 1
 
         #center = users_un_bo[temp % len(users_un_bo)]
-
 def distance(a,b):
-    return ((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2) ** 0.5
-
+        return ((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2) ** 0.5
 
 #center 当前中心点
 #firstL 第一优先级的点的list 函数被调用前为 必须被 覆盖 调用后为已覆盖
@@ -147,34 +158,30 @@ def localCover(center,firstL,secondL):
                 firstL.remove(k)
                 break
     return center
-        #向量OA叉积向量OB。大于0表示从OA到OB为逆时针旋转
+    
 
+#向量OA叉积向量OB。大于0表示从OA到OB为逆时针旋转
 def cross(center,a,b):
     return (a[0] - center[0]) * (b[1] - center[1]) - (a[1] - center[1]) * (b[0] - center[0])
 
 
-#用以找出最低最左边的点
-def compare_position(a):
-    return [a[1],a[0]]
-
-
 #小于。以users[0]当中心点做角度排序，角度由小排到大（即逆时针方向）。
 #角度相同時，距离中心点较近的点排前面。
-def compare_angle(a):
-    global users
-    cos_theta = np.arccos(xAXIS.dot(a) / (np.linalg.norm(xAXIS) * np.linalg.norm(a)))
-    return [cos_theta,distance([users[0].x,users[0].z],a)]
-
-
+def compare_angle(a,b):
+    if (a[0] - datumPoint[0]) * (b[1] - datumPoint[1]) - (a[1] - datumPoint[1]) * (b[0] - datumPoint[0]) > 0 or ((a[0] - datumPoint[0]) * (b[1] - datumPoint[1]) - (a[1] - datumPoint[1]) * (b[0] - datumPoint[0]) == 0 and distance(a,datumPoint) < distance(b,datumPoint)):
+        return 1
+    else:
+        return -1
 
 #解决凸包问题
 #users 用户位置list
 #Graham's Scan算法
 def convexHull(users):
+    users.sort(key=functools.cmp_to_key(compare_angle))
     outs = [[.0,.0]] * len(users)
-    MinIndex = users.index(min(users,key = compare_position))
+    #MinIndex = users.index(min(users,key = compare_angle))
     #用最低最左边的点为起点
-    users[0] , users[MinIndex] = users[MinIndex] , users[0]
+    #users[0] , users[MinIndex] = users[MinIndex] , users[0]
     #按角度排序
     #users.sort(key=compare_angle)
     # m为凸包顶点数目
@@ -187,13 +194,12 @@ def convexHull(users):
         m = m + 1
     return [user for user in outs if user != [.0,.0]]
 
-
-
 #获取i,j,k的外接圆,返回圆心,解三元二次方程
 def getCentre(i,j,k):
-    a,b,c,d = j[0] - i[0],j[1] - i[1],k[0] - j[0],k[1] - j[1]
-    e,f = j[0] ** 0.5 + j[1] ** 0.5 - i[0] ** 0.5 - i[1] ** 0.5,k[0] ** 0.5 + k[1] ** 0.5 - j[0] ** 0.5 - j[1] ** 0.5
-    return [(f * b - e * d) / (c * b - a * d) / 2.0,(a * f - e * c) / (a * d - b * c) / 2]
+        a,b,c,d = i[0] - j[0],i[1] - j[1],(j[0] ** 2 + j[1] ** 2 - i[0] ** 2 - i[1] ** 2) / 2,i[0] - k[0]
+        e,f = i[1] - k[1],(k[0] ** 2 + k[1] ** 2 - i[0] ** 2 - i[1] ** 2) / 2
+        return [(f * a - c * d) / (b * d - e * a),(f * b - c * e) / (a * e - b * d)]
+       
 
 
 #放置中心点，返回半径
@@ -222,19 +228,18 @@ def oneCenter(points):
                             radius = distance(points[i],center)
     return [center,radius]
 
-
-def make_plane(plane):
-    plane.move_active += 1
-    if plane.move_active == 250:
-        plane.move_active = 0
-        plane.x_speed = 0
-        plane.z_speed = 0
+def make_UAV(UAV):
+    UAV.move_active += 1
+    if UAV.move_active == 250:
+        UAV.move_active = 0
+        UAV.x_speed = 0
+        UAV.z_speed = 0
     # 程序对象program作为当前渲染状态的一部分
-    x1 = plane.x
-    z1 = plane.z
-    x1 += plane.x_speed
-    z1 += plane.z_speed
-    plane.change(x1, z1)
+    x1 = UAV.x
+    z1 = UAV.z
+    x1 += UAV.x_speed
+    z1 += UAV.z_speed
+    UAV.change(x1, z1)
 
     # 高度关联
     # glUniform
@@ -244,56 +249,54 @@ def make_plane(plane):
     glUniform1f(shaderall.updateProgram.xl, 0)
     glUniform1f(shaderall.updateProgram.yl, 0)
     # 补偿高度
-    glUniform1f(shaderall.updateProgram.sphereRadius, UAVHeight)
+    glUniform1f(shaderall.updateProgram.sphereRadius, UAV_height)
     glUniform1i(shaderall.updateProgram.tex0, 1)
     glUniform2f(shaderall.updateProgram.xz, 0, 0)
     getMVP(x1, z1)
-    plane.draw()
+    UAV.draw()
 
-
-def make_people(people):
-    people.move_active += 1
-    if people.move_active == 250:
-        people.move_active = 0
-        people.x_speed = 0
-        people.z_speed = 0
+def make_userple(userple):
+    userple.move_active += 1
+    if userple.move_active == 250:
+        userple.move_active = 0
+        userple.x_speed = 0
+        userple.z_speed = 0
     # 程序对象program作为当前渲染状态的一部分
-    x1 = people.x
-    z1 = people.z
-    x1 += people.x_speed
-    z1 += people.z_speed
-    people.change(x1, z1)
+    x1 = userple.x
+    z1 = userple.z
+    x1 += userple.x_speed
+    z1 += userple.z_speed
+    userple.change(x1, z1)
     # 高度关联
     # glUniform
     # location：指明要更改的uniform变量的位置
     # v0, v1, v2, v3：指明在指定的uniform变量中要使用的新值
     # 利用x, y坐标确认高度
-    glUniform1f(shaderall.updateProgram.xl, plane.xl)
-    glUniform1f(shaderall.updateProgram.yl, plane.yl)
+    glUniform1f(shaderall.updateProgram.xl, UAV.xl)
+    glUniform1f(shaderall.updateProgram.yl, UAV.yl)
     # 补偿半径
-    glUniform1f(shaderall.updateProgram.sphereRadius, people.radius)
+    glUniform1f(shaderall.updateProgram.sphereRadius, userple.radius)
     glUniform1i(shaderall.updateProgram.tex0, 1)
     glUniform2f(shaderall.updateProgram.xz, x1, z1)
     getMVP(x1, z1)
-    people.draw()
+    userple.draw()
 
-
-def plane_move(plane, x, z):
-    plane.move_active += 1
-    if plane.move_active == 250:
-        plane.move_active = 0
-        plane.x_speed = 0
-        plane.z_speed = 0
+def UAV_move(UAV, x, z):
+    UAV.move_active += 1
+    if UAV.move_active == 250:
+        UAV.move_active = 0
+        UAV.x_speed = 0
+        UAV.z_speed = 0
     # 程序对象program作为当前渲染状态的一部分
-    x1 = plane.x
-    z1 = plane.z
+    x1 = UAV.x
+    z1 = UAV.z
     x_cha = x - x1
     z_cha = z - z1
     x_speed = x_cha / 250
     z_speed = z_cha / 250
-    x1 += plane.x_speed
-    z1 += plane.z_speed
-    plane.change(x1, z1)
+    x1 += UAV.x_speed
+    z1 += UAV.z_speed
+    UAV.change(x1, z1)
     glUseProgram(shaderall.updateProgram)
     # 高度关联
     # glUniform
@@ -303,44 +306,42 @@ def plane_move(plane, x, z):
     glUniform1f(shaderall.updateProgram.xl, 0)
     glUniform1f(shaderall.updateProgram.yl, 0)
     # 补偿半径
-    glUniform1f(shaderall.updateProgram.sphereRadius, UAVHeight)
+    glUniform1f(shaderall.updateProgram.sphereRadius, UAV_height)
     glUniform1i(shaderall.updateProgram.tex0, 1)
     glUniform2f(shaderall.updateProgram.xz, 0, 0)
     getMVP(x1, z1)
-    plane.draw()
+    UAV.draw()
 
-
-def people_move(people, x, z):
-    people.move_active += 1
-    if people.move_active == 250:
-        people.move_active = 0
-        people.x_speed = 0
-        people.z_speed = 0
+def userple_move(userple, x, z):
+    userple.move_active += 1
+    if userple.move_active == 250:
+        userple.move_active = 0
+        userple.x_speed = 0
+        userple.z_speed = 0
     # 程序对象program作为当前渲染状态的一部分
-    x1 = people.x
-    z1 = people.z
+    x1 = userple.x
+    z1 = userple.z
     x_cha = x - x1
     z_cha = z - z1
     x_speed = x_cha / 250
     z_speed = z_cha / 250
-    x1 += people.x_speed
-    z1 += people.z_speed
-    people.change(x1, z1)
+    x1 += userple.x_speed
+    z1 += userple.z_speed
+    userple.change(x1, z1)
     glUseProgram(shaderall.updateProgram)
     # 高度关联
     # glUniform
     # location：指明要更改的uniform变量的位置
     # v0, v1, v2, v3：指明在指定的uniform变量中要使用的新值
     # 利用x, y坐标确认高度
-    glUniform1f(shaderall.updateProgram.xl, plane.xl)
-    glUniform1f(shaderall.updateProgram.yl, plane.yl)
+    glUniform1f(shaderall.updateProgram.xl, UAV.xl)
+    glUniform1f(shaderall.updateProgram.yl, UAV.yl)
     # 补偿半径
-    glUniform1f(shaderall.updateProgram.sphereRadius, people.radius)
+    glUniform1f(shaderall.updateProgram.sphereRadius, userple.radius)
     glUniform1i(shaderall.updateProgram.tex0, 1)
     glUniform2f(shaderall.updateProgram.xz, x1, z1)
     getMVP(x1, z1)
-    people.draw()
-
+    userple.draw()
 
 def DrawGLScene():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -356,45 +357,45 @@ def DrawGLScene():
     glActiveTexture(GL_TEXTURE1)
     # 将一个命名的纹理绑定到一个纹理目标上
     glBindTexture(GL_TEXTURE_2D, hightMap)     
-    #plane
+    #UAV
     # 程序对象program作为当前渲染状态的一部分
-    glUseProgram(shaderall.planeProgram)
+    glUseProgram(shaderall.UAVProgram)
     #设置uniform采样器的位置值，或者说纹理单元，保证每个uniform采样器对应着正确的纹理单元
-    glUniform1i(shaderall.planeProgram.tex0, 0)
-    plane.draw()
+    glUniform1i(shaderall.UAVProgram.tex0, 0)
+    UAV.draw()
 
     #glUseProgram(0)
     #glColor3f(0.9, 0.9, 0.9)
     #glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, ord('a'))
     #glLineWidth(2)
     #glBegin(GL_LINES)
-    #for peo in users:
+    #for user in users:
     #    dis = []
     #    #计算距离
     #    for _, pla in enumerate(UAVs):
-    #        dis.append((pla.x - peo.x) * (pla.x - peo.x) + (pla.z - peo.z) *
-    #        (pla.z - peo.z))
+    #        dis.append((pla.x - user.x) * (pla.x - user.x) + (pla.z - user.z) *
+    #        (pla.z - user.z))
     #    # print(dis)
     #    #根据无人机与人的距离，选择距离最近的无人机连线，目前只有两架无人机
     #    if dis[0] < dis[1]:
-    #        glVertex3f(UAVs[0].x, 0.7 + UAVHeight, UAVs[0].z)
-    #        glVertex3f(peo.x, plane.getHeight(peo.x, peo.z) + 0.1, peo.z)
+    #        glVertex3f(UAVs[0].x, 0.7 + UAV_height, UAVs[0].z)
+    #        glVertex3f(user.x, UAV.getHeight(user.x, user.z) + 0.1, user.z)
     #    else:
-    #        glVertex3f(UAVs[1].x, 0.7 + UAVHeight, UAVs[1].z)
-    #        glVertex3f(peo.x, plane.getHeight(peo.x, peo.z) + 0.1, peo.z)
+    #        glVertex3f(UAVs[1].x, 0.7 + UAV_height, UAVs[1].z)
+    #        glVertex3f(user.x, UAV.getHeight(user.x, user.z) + 0.1, user.z)
     #glEnd()
     #sphare
 
     glUseProgram(shaderall.updateProgram)
     for pla in UAVs:
-        make_plane(pla)
-    for peo in users:
-        make_people(peo)
+        make_UAV(pla)
+    for user in users:
+        make_userple(user)
 
     #glUseProgram(0)
     #glUseProgram(shaderall.particleProgram)
-    #glUniform1i(shaderall.particleProgram.plane, 1)
-    #glUniform2f(shaderall.particleProgram.planeSacle,plane.xl,plane.yl)
+    #glUniform1i(shaderall.particleProgram.UAV, 1)
+    #glUniform2f(shaderall.particleProgram.UAVSacle,UAV.xl,UAV.yl)
     #glUniform3f(shaderall.particleProgram.sphere,eyeLoc[0],sph.radius,eyeLoc[2])
     #ps.render(shaderall.particleProgram)
     #glUseProgram(0)
@@ -404,22 +405,22 @@ def DrawGLScene():
     glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, ord('a'))
     glLineWidth(2)
     glBegin(GL_LINES)
-    for peo in users:
+    for user in users:
         dis = []
         #计算距离
         for _, pla in enumerate(UAVs):
-            dis.append((pla.x - peo.x) * (pla.x - peo.x) + (pla.z - peo.z) * (pla.z - peo.z))
+            dis.append((pla.x - user.x) * (pla.x - user.x) + (pla.z - user.z) * (pla.z - user.z))
         # print(dis)
         #根据无人机与人的距离，选择距离最近的无人机连线，目前只有两架无人机
         #if dis[0] < dis[1]:
-        #    glVertex3f(UAVs[0].x, 0.7 + UAVHeight, UAVs[0].z)
-        #    glVertex3f(peo.x, plane.getHeight(peo.x, peo.z) + 0.1, peo.z)
+        #    glVertex3f(UAVs[0].x, 0.7 + UAV_height, UAVs[0].z)
+        #    glVertex3f(user.x, UAV.getHeight(user.x, user.z) + 0.1, user.z)
         #else:
-        #    glVertex3f(UAVs[1].x, 0.7 + UAVHeight, UAVs[1].z)
-        #    glVertex3f(peo.x, plane.getHeight(peo.x, peo.z) + 0.1, peo.z)
+        #    glVertex3f(UAVs[1].x, 0.7 + UAV_height, UAVs[1].z)
+        #    glVertex3f(user.x, UAV.getHeight(user.x, user.z) + 0.1, user.z)
         MinIndex = dis.index(min(dis))
-        glVertex3f(UAVs[MinIndex].x, 0.7 + UAVHeight, UAVs[MinIndex].z)
-        glVertex3f(peo.x, plane.getHeight(peo.x, peo.z) + 0.1, peo.z)
+        glVertex3f(UAVs[MinIndex].x, 0.7 + UAV_height, UAVs[MinIndex].z)
+        glVertex3f(user.x, UAV.getHeight(user.x, user.z) + 0.1, user.z)
     glEnd()
 
     # 设置激活的纹理单元
@@ -457,7 +458,6 @@ def getMVP(x, z):
     glUniformMatrix4fv(shaderall.updateProgram.vMatrix, 1, GL_FALSE, v)
     glUniformMatrix4fv(shaderall.updateProgram.mMatrix, 1, GL_FALSE, m)
     #glgetfloat
-
 def mouseButton(button, mode, x, y):	
 	if button == GLUT_RIGHT_BUTTON:
 		camera.mouselocation = [x,y]
@@ -469,7 +469,35 @@ def ReSizeGLScene(Width, Height):
     gluPerspective(45.0, float(Width) / float(Height), 0.1, 100.0)
     glMatrixMode(GL_MODELVIEW)
 
+#无人机移动 时钟信号回调
+def timerProc(id):
+    for index, i in enumerate(UAVsLoc):
+        #print(index, i)
+        UAVs[index].move_location(UAVs[index].x,
+        UAVs[index].z, float(i[0]) / 120 - 5, float(i[1]) / 120 - 5)
+    glutTimerFunc(1000, timerProc, 1)
 
+##location_index = 0
+##用户移动 时钟信号回调
+#def timerProc(id):
+
+#    #global location_index
+#    #location_index += 1
+#    #for index, i in enumerate(UAVs[location_index]):
+#      # print(index, i)
+#      # UAVs[index].move_location(UAVs[index].x,
+#      # UAVs[index].z, float(i[0])/120 - 5, float(i[1])/120 - 5)
+    
+#    pass
+
+#    for index, i in enumerate(usersLoc[0]):
+#        #print(index, i)
+#        users[index].move_location(users[index].x,
+#        users[index].z, float(i[0]) / 120 - 5, float(i[1]) / 120 - 5)
+#    glutTimerFunc(1000, timerProc, 1)
+
+
+# gluLookAt(0, 15, 0, 0, 0, 0, 1.0, 0, 0.0)
 def keypress(key, x, y):
     if key == GLUT_KEY_UP:
         camera.move(0., 0., 1 * camera.offest)
@@ -483,44 +511,74 @@ def keypress(key, x, y):
         camera.change_overlook()
 
 
-#无人机移动 时钟信号回调
-def timerProc(id):
-    for index, i in enumerate(UAVsLoc):
-        #print(index, i)
-        UAVs[index].move_location(UAVs[index].x,
-        UAVs[index].z, float(i[0]) / 120 - 5, float(i[1]) / 120 - 5)
-    glutTimerFunc(1000, timerProc, 1)
-
-
-##location_index = 0
-##用户移动 时钟信号回调
-#def timerProc(id):
-
-#    #global location_index
-#    #location_index += 1
-#    #for index, i in enumerate(UAVsLoc[location_index]):
-#      # print(index, i)
-#      # UAVs[index].move_location(UAVs[index].x,
-#      # UAVs[index].z, float(i[0])/120 - 5, float(i[1])/120 - 5)
-    
-#    pass
-
-#    for index, i in enumerate(usersLoc[0]):
-#        #print(index, i)
-#        users[index].move_location(users[index].x,
-#        users[index].z, float(i[0]) / 120 - 5, float(i[1]) / 120 - 5)
-#    glutTimerFunc(1000, timerProc, 1)
-
+#地图大小1200*1200
 def main():
-    #global UAVsLoc
-    start = time.time()
-    UAVsLoc = planningUAV(usersLoc)
-    end = time.time()
-    print('cost {}ms.'.format((end - start) * 1000))
+    global window
+    global UAVradius
+    global datumPoint
+    global UAVs
+    global UAVsLoc
+
+    testCount=20
+
+    UAVradius=120
+    userNum=80
+    totalTime = 0
+    count = 0
+    for i in range(testCount):
+        #usersLoc = getUserFromFile()
+        usersLoc = getUserRandom(userNum)
+        #用户初始位置，从usersLoc中读取
+        users.clear()
+        for index, i in enumerate(usersLoc):
+            users.append(common.sphere(16, 16, 0.1, i[0] / 120 - 5, i[1] / 120 - 5))
+        minIndex = usersLoc.index(min(usersLoc,key=lambda x:[x[1],x[0]]))
+        datumPoint = np.array(usersLoc[minIndex])
+        start = time.time()
+        UAVsLoc = planningUAV(usersLoc)
+        end = time.time()
+        totalTime=totalTime+(end - start)
+        count=count+len(UAVsLoc)
+    print('K = 80, D/r = 10, {}\'s average cost {}ms,needs {} UAVs.'.format(testCount,totalTime * 1000/testCount,count/testCount))
+
+    UAVradius=60
+    userNum=400
+    totalTime = 0
+    count = 0
+    for i in range(testCount):
+        #usersLoc = getUserFromFile()
+        usersLoc = getUserRandom(400)
+        users.clear()
+        #用户初始位置，从usersLoc中读取
+        for index, i in enumerate(usersLoc):
+            users.append(common.sphere(16, 16, 0.1, i[0] / 120 - 5, i[1] / 120 - 5))
+        minIndex = usersLoc.index(min(usersLoc,key=lambda x:[x[1],x[0]]))
+        datumPoint = np.array(usersLoc[minIndex])
+        start = time.time()
+        UAVsLoc = planningUAV(usersLoc)
+        end = time.time()
+        totalTime=totalTime+(end - start)
+        count=count+len(UAVsLoc)
+    print('K = 400, D/r = 20, {}\'s average cost {}ms,needs {} UAVs.'.format(testCount,totalTime * 1000/testCount,count/testCount))
+
+    #UAVradius=120
+    #userNum=80
+    #usersLoc = getUserFromFile()
+    #usersLoc = getUserRandom(userNum)
+    ##用户初始位置，从usersLoc中读取
+    #for index, i in enumerate(usersLoc):
+    #    users.append(common.sphere(16, 16, 0.1, i[0] / 120 - 5, i[1] / 120 - 5))
+    #minIndex = usersLoc.index(min(usersLoc,key=lambda x:[x[1],x[0]]))
+    #datumPoint = np.array(usersLoc[minIndex])
+    #start = time.time()
+    #UAVs = planningUAV(usersLoc)
+    #end = time.time()
+    #print('cost {}ms,needs {} UAVs.'.format((end - start) * 1000,len(UAVs)))
+
     #无人机初始位置
     for i in range(len(UAVsLoc)):
         UAVs.append(common.sphere(16, 16, 0.1, 0, 0))
-    global window
+
     #glutInit(sys.argv)
     # 初始化
     glutInit([])
@@ -547,8 +605,9 @@ def main():
     # 定时器回调函数
     glutTimerFunc(1000, timerProc, 1)
 
-    # gluLookAt(0, 15, 0, 0, 0, 0, 1.0, 0, 0.0)
-   
+
+
+
     # 注册当前窗口的键盘回调函数
     # glutKeyboardFunc(camera.keypress)
     # 设置当前窗口的特定键的回调函数
@@ -584,7 +643,7 @@ def main():
     # create terrain use cpu
     hightimage = loadTexture.Texture.loadterrain("hight.gif")
     # image = open("ground2.bmp").convert("RGBA")
-    plane.setHeight(hightimage)
+    UAV.setHeight(hightimage)
     glutMainLoop()
 
 main()
