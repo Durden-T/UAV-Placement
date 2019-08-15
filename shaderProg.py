@@ -11,7 +11,8 @@ plane_v = """
         //#version 330 compatibility
         #version 120
         uniform sampler2D tex1;       
-        void main() {            
+        void main() 
+        {
             gl_TexCoord[0] = gl_MultiTexCoord0; 
 		    vec4 v = vec4(gl_Vertex);		
 		    //v.y = texture2D(tex1, gl_TexCoord[0].st).r/256.0;
@@ -22,7 +23,8 @@ plane_f = """
         //#version 330 compatibility
         #version 120
         uniform sampler2D tex0;
-        void main() {            
+        void main() 
+        {            
             vec4 color = texture2D(tex0, gl_TexCoord[0].st);//gl_TexCoord[0].st);vec2(0.3,0.3)
             gl_FragColor = color;//vec4( 0, 1, 0, 1 );//
         }"""
@@ -42,7 +44,8 @@ update_v = """
         uniform mat4 vMatrix;
         uniform mat4 pMatrix;
         out vec4 o_color;          
-        void main() {      
+        void main() 
+        {      
 		    vec4 pos = vec4(vectpos,1.0);              
             vec2 uv = vec2(xz/vec2(xw,yw) + vec2(0.5,0.5));
             uv.y = 1.0 - uv.y;
@@ -56,7 +59,8 @@ update_f = """
         //#version 330 compatibility
         #version 330
         in vec4 o_color;  
-        void main() {            
+        void main() 
+        {            
             //vec4 color = texture2D(tex1, gl_TexCoord[0].st);
             gl_FragColor = o_color;// vec4( 0, 1, 0, 1 );
         }"""
@@ -76,7 +80,8 @@ update_v1 = """
         uniform mat4 vMatrix1;
         uniform mat4 pMatrix1;
         out vec4 o_color;          
-        void main() {      
+        void main() 
+        {      
 		    vec4 pos = vec4(vectpos1,1.0);              
             vec2 uv = vec2(xz1/vec2(xw1,yw1) + vec2(0.5,0.5));
             uv.y = 1.0 - uv.y;
@@ -90,7 +95,8 @@ update_f1 = """
         //#version 330 compatibility
         #version 330
         in vec4 o_color;  
-        void main() {            
+        void main() 
+        {            
             //vec4 color = texture2D(tex1, gl_TexCoord[0].st);
             gl_FragColor = o_color;// vec4( 0, 1, 0, 1 );
         }"""
@@ -99,7 +105,8 @@ gpgpu_v = """
         //#version 330 compatibility
         #version 130
         out vec4 pos;
-        void main() {  
+        void main() 
+        {  
             pos = vec4(gl_Vertex);
             //The following coding must be in fragment shader
             //vec2 xy = v.xy;
@@ -115,7 +122,8 @@ gpgpu_f = """
         uniform sampler2D tex0; 
         uniform float xw;
         uniform float yw;          
-        void main() {             
+        void main() 
+        {             
             vec2 xy = pos.xy;
             vec2 uv = vec2(xy/vec2(xw,yw)).xy;            
             vec4 o_color = texture2D(tex0, uv);// vec4(uv.x,uv.y, 0, 1 );//   
@@ -128,7 +136,8 @@ tf_v = """
         in float inValue;
         out float outValue;
         out float out2;
-        void main() {
+        void main() 
+        {
             outValue = inValue+3.0;
             out2 = 1.0;
         }"""
@@ -146,7 +155,8 @@ particle_v = """
         out vec3 outpos;
         out vec3 outvel;
         out float outtime;
-        void main() {
+        void main() 
+        {
             outpos = pos + vel*span;
             vec2 uv = vec2(pos.xz/planeSacle + vec2(0.5,0.5));
             uv.y = 1.0 - uv.y;
@@ -179,6 +189,7 @@ particle_v = """
         }"""
 
 class allshader:
+
     def __init__(this):
         this.planeProgram = shaders.compileProgram(shaders.compileShader(plane_v, GL_VERTEX_SHADER),
             shaders.compileShader(plane_f, GL_FRAGMENT_SHADER)) 

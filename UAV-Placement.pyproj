@@ -4,9 +4,8 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>0021a2be-66cf-4d4a-89cd-19d0a7e14df6</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>UAV_Placement.py</StartupFile>
-    <SearchPath>
-    </SearchPath>
+    <StartupFile>main.py</StartupFile>
+    <SearchPath>..\UAV-Placement</SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <Name>UAV-Placement</Name>
@@ -21,12 +20,20 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="common.py" />
-    <Compile Include="get_location.py" />
-    <Compile Include="loadtexture.py" />
+    <Compile Include="base.py" />
+    <Compile Include="draw.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="loadTexture.py" />
     <Compile Include="particle.py" />
+    <Compile Include="planningUAV.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="shaderProg.py" />
-    <Compile Include="UAV_Placement.py" />
+    <Compile Include="main.py" />
+    <Compile Include="__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
