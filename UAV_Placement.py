@@ -519,10 +519,11 @@ def main():
     global UAVs
     global UAVsLoc
 
-    testCount=20
-
-    UAVradius=120
-    userNum=80
+    testCount=10
+    #D/r
+    DR=20
+    userNum=400
+    UAVradius=1200/DR
     totalTime = 0
     count = 0
     for i in range(testCount):
@@ -539,27 +540,9 @@ def main():
         end = time.time()
         totalTime=totalTime+(end - start)
         count=count+len(UAVsLoc)
-    print('K = 80, D/r = 10, {}\'s average cost {}ms,needs {} UAVs.'.format(testCount,totalTime * 1000/testCount,count/testCount))
+    print('K = {}, D/r = {}, {}\'s average cost {}ms,needs {} UAVs.'.format(userNum,DR,testCount,totalTime * 1000/testCount,count/testCount))
 
-    UAVradius=60
-    userNum=400
-    totalTime = 0
-    count = 0
-    for i in range(testCount):
-        #usersLoc = getUserFromFile()
-        usersLoc = getUserRandom(400)
-        users.clear()
-        #用户初始位置，从usersLoc中读取
-        for index, i in enumerate(usersLoc):
-            users.append(common.sphere(16, 16, 0.1, i[0] / 120 - 5, i[1] / 120 - 5))
-        minIndex = usersLoc.index(min(usersLoc,key=lambda x:[x[1],x[0]]))
-        datumPoint = np.array(usersLoc[minIndex])
-        start = time.time()
-        UAVsLoc = planningUAV(usersLoc)
-        end = time.time()
-        totalTime=totalTime+(end - start)
-        count=count+len(UAVsLoc)
-    print('K = 400, D/r = 20, {}\'s average cost {}ms,needs {} UAVs.'.format(testCount,totalTime * 1000/testCount,count/testCount))
+   
 
     #UAVradius=120
     #userNum=80
