@@ -60,21 +60,13 @@ def difference(a,b):
 def planningUAV(users):
     #先按逆时针排序，以后不用再次排
     users.sort(key=functools.cmp_to_key(compare_angle))
-    #k直接选取第一个，便于后续确定下一个点（每次把当前第一个未覆盖的边界点取出)，随机取也可，效果没有什么不同
+    #k直接选取第一个，便于后续确定下一个点（每次把当前第一个点取出)，随机取也可，效果没有什么不同
     k = users[0]
-    #for user in users:
-        #print(user[2])
-    #print('fuck')
     UAVsLoc = []
     users_un = users
     #m = 1
     #当仍存在未被覆盖的用户时
     while users_un:     
-        #users_un_bo = [] #未被覆盖的边界点
-        users_un_in = []
-        users_new = [] #刚被覆盖的点
-        users_bo = [] #已被覆盖的边界点
-
         # 由未被覆盖的用户来重新构造新的边界线。
         users_un_bo = convexHull(users_un)
         #for user in users_un_bo:
@@ -85,14 +77,8 @@ def planningUAV(users):
         #if m == 1 :
             #k = random.choice(users_un_bo)
 
-        #try:
-        #    center_index = users_un_bo.index(k) #用于确认下一个center的选择
-        #except ValueError:
-        #    print('fuck')
-        #    center_index = center_index + 1
         users_bo = [k] #当前情况下覆盖的边界点
         center = localCover(k,users_bo,difference(users_un_bo,users_bo))
-        #users_new = users_bo #此时为刚被覆盖的边界点
         users_un_bo_new = difference(users_un_bo,users_bo) #更新未被覆盖的边界点
         center = localCover(center,users_bo,users_un_in) #调用完后new为刚被覆盖的所有点
         users_un = difference(users_un,users_bo)
@@ -101,27 +87,13 @@ def planningUAV(users):
         
         UAVsLoc.append(center)
 
-
         #在更新后的未被覆盖的边界点中选择一个临近旧center的点，作为新center。
         #若users_un已经为空赋NONE
         k = users_un[0] if users_un else None
 
-        #for user in users_un_bo_new:
-        #    if user[2] > k[2]:
-        #        k = user
-        #        break
-        #print(k[2])
-
     return UAVsLoc
-        #temp = center_index + 1
-        ##在更新后的未被覆盖的边界点中选择一个临近旧center的点，作为新center。
-        #while (temp % len(users_un_bo)) != center_index:
-        #    if users_un_bo[temp% len(users_un_bo)] not in users_un_bo_new:
-        #        break #找到下一个点
-        #    else :
-        #        temp = temp + 1
 
-        #center = users_un_bo[temp % len(users_un_bo)]
+
 def distance(a,b):
         return ((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2) ** 0.5
 
@@ -129,6 +101,7 @@ def distance(a,b):
 #center 当前中心点
 #firstL 第一优先级的点的list 函数被调用前为 必须被 覆盖 调用后为已覆盖
 #secondL 第二优先级的点的list 尽可能多 覆盖
+#会改变firstL的值
 def localCover(center,firstL,secondL):
     #UAV覆盖半径
     global UAVradius
@@ -182,12 +155,7 @@ def compare_angle(a,b):
 def convexHull(users):
     #users.sort(key=functools.cmp_to_key(compare_angle))
     outs = [[.0,.0]] * len(users)
-    #MinIndex = users.index(min(users,key = compare_angle))
-    #用最低最左边的点为起点
-    #users[0] , users[MinIndex] = users[MinIndex] , users[0]
-    #按角度排序
-    #users.sort(key=compare_angle)
-    # m为凸包顶点数目
+    #调用前users已经是排好序的
     m = 0
     for i in range(len(users)):
         #擦除凹陷的点
@@ -367,29 +335,6 @@ def DrawGLScene():
     glUniform1i(shaderall.UAVProgram.tex0, 0)
     UAV.draw()
 
-    #glUseProgram(0)
-    #glColor3f(0.9, 0.9, 0.9)
-    #glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, ord('a'))
-    #glLineWidth(2)
-    #glBegin(GL_LINES)
-    #for user in users:
-    #    dis = []
-    #    #计算距离
-    #    for _, pla in enumerate(UAVs):
-    #        dis.append((pla.x - user.x) * (pla.x - user.x) + (pla.z - user.z)
-    #        *
-    #        (pla.z - user.z))
-    #    # print(dis)
-    #    #根据无人机与人的距离，选择距离最近的无人机连线，目前只有两架无人机
-    #    if dis[0] < dis[1]:
-    #        glVertex3f(UAVs[0].x, 0.7 + UAV_height, UAVs[0].z)
-    #        glVertex3f(user.x, UAV.getHeight(user.x, user.z) + 0.1, user.z)
-    #    else:
-    #        glVertex3f(UAVs[1].x, 0.7 + UAV_height, UAVs[1].z)
-    #        glVertex3f(user.x, UAV.getHeight(user.x, user.z) + 0.1, user.z)
-    #glEnd()
-    #sphare
-
     glUseProgram(shaderall.updateProgram)
     for pla in UAVs:
         make_UAV(pla)
@@ -414,14 +359,7 @@ def DrawGLScene():
         #计算距离
         for _, pla in enumerate(UAVs):
             dis.append((pla.x - user.x) * (pla.x - user.x) + (pla.z - user.z) * (pla.z - user.z))
-        # print(dis)
-        #根据无人机与人的距离，选择距离最近的无人机连线，目前只有两架无人机
-        #if dis[0] < dis[1]:
-        #    glVertex3f(UAVs[0].x, 0.7 + UAV_height, UAVs[0].z)
-        #    glVertex3f(user.x, UAV.getHeight(user.x, user.z) + 0.1, user.z)
-        #else:
-        #    glVertex3f(UAVs[1].x, 0.7 + UAV_height, UAVs[1].z)
-        #    glVertex3f(user.x, UAV.getHeight(user.x, user.z) + 0.1, user.z)
+        #根据无人机与人的距离，选择距离最近的无人机连线
         MinIndex = dis.index(min(dis))
         glVertex3f(UAVs[MinIndex].x, 0.7 + UAV_height, UAVs[MinIndex].z)
         glVertex3f(user.x, UAV.getHeight(user.x, user.z) + 0.1, user.z)
@@ -527,8 +465,10 @@ def main():
     global datumPoint
     global UAVs
     global UAVsLoc
+    global colorMap
+    global hightMap
+    global shaderall
 
-    
     #D/r
     DR = float(input('请输入地图边长D与UAV覆盖半径r之比：'))
     #用户数量
@@ -561,24 +501,7 @@ def main():
         end = time.time()
         totalTime = totalTime + (end - start)
         count = count + len(UAVsLoc)
-    print('{}次测试的平均耗时为{}ms,平均需要{}架UAVs.'.format(userNum,DR,testCount,totalTime * 1000 / testCount,count / testCount))
-
-   
-
-    #UAVradius=120
-    #userNum=80
-    #usersLoc = getUserFromFile()
-    #usersLoc = getUserRandom(userNum)
-    ##用户初始位置，从usersLoc中读取
-    #for index, i in enumerate(usersLoc):
-    #    users.append(common.sphere(16, 16, 0.1, i[0] / 120 - 5, i[1] / 120 -
-    #    5))
-    #minIndex = usersLoc.index(min(usersLoc,key=lambda x:[x[1],x[0]]))
-    #datumPoint = np.array(usersLoc[minIndex])
-    #start = time.time()
-    #UAVs = planningUAV(usersLoc)
-    #end = time.time()
-    #print('cost {}ms,needs {} UAVs.'.format((end - start) * 1000,len(UAVs)))
+    print('{}次测试的平均耗时为{}ms,平均需要{}架无人机。'.format(testCount,totalTime * 1000 / testCount,count / testCount))
 
     #无人机初始位置
     for i in range(len(UAVsLoc)):
@@ -610,9 +533,6 @@ def main():
     # 定时器回调函数
     glutTimerFunc(1000, timerProc, 1)
 
-
-
-
     # 注册当前窗口的键盘回调函数
     # glutKeyboardFunc(camera.keypress)
     # 设置当前窗口的特定键的回调函数
@@ -634,14 +554,13 @@ def main():
     camera.move(0.0, 1.3, 0)
     camera.setthree(True)
     camera.length = 5
-    global shaderall
+    
     shaderall = shaderProg.allshader()
     #global tf
     #tf = common.transformFeedback(shaderall.tfProgram)
     #global ps
     #ps = particle.particleSystem(1)
-    global colorMap
-    global hightMap
+    
     colorMap = loadTexture.Texture.loadmap("ground2.bmp")
     # hight map for cpu to gpu
     hightMap = loadTexture.Texture.loadmap("hight.gif")
