@@ -16,17 +16,22 @@ import particle
 from get_location import *
 
 window = None
+#精度控制
 eps = 1e-6
+#最左下的点 排序基准点
 datumPoint=[.0,.0]
 #UAV覆盖半径
 UAVradius = 0
 # 飞机高度
 UAV_height = 2.6
-# 地图p.长宽
+# 地图长宽
 UAV_size = 120
 
+#UAV结构list
 UAVs = []
+#user结构list
 users = []
+#UAV坐标list
 UAVsLoc=[]
 
 
@@ -53,9 +58,9 @@ def difference(a,b):
 
 #users 用户位置list
 def planningUAV(users):
+    #先按逆时针排序，以后不用再次排
     users.sort(key=functools.cmp_to_key(compare_angle))
-    for i in range(len(users)):
-        users[i].append(i)
+    #k直接选取第一个，便于后续确定下一个点（每次把当前第一个未覆盖的边界点取出)，随机取也可，效果没有什么不同
     k = users[0]
     #for user in users:
         #print(user[2])
@@ -98,7 +103,7 @@ def planningUAV(users):
 
 
         #在更新后的未被覆盖的边界点中选择一个临近旧center的点，作为新center。
-
+        #若users_un已经为空赋NONE
         k=users_un[0] if users_un else None
 
         #for user in users_un_bo_new:
@@ -107,8 +112,6 @@ def planningUAV(users):
         #        break
         #print(k[2])
 
-    for user in users:
-        user.pop()
     return UAVsLoc
         #temp = center_index + 1
         ##在更新后的未被覆盖的边界点中选择一个临近旧center的点，作为新center。
@@ -142,7 +145,6 @@ def localCover(center,firstL,secondL):
                 firstL.append(user)
                 secondL.remove(user)
 
-        #MinIndex = users.index(min(users,key = compare_position))
         k = min(secondL,key=lambda x:distance(x,center),default=None)
         if k:
             #此时k为距离center最近的点
@@ -165,7 +167,7 @@ def cross(center,a,b):
     return (a[0] - center[0]) * (b[1] - center[1]) - (a[1] - center[1]) * (b[0] - center[0])
 
 
-#小于。以users[0]当中心点做角度排序，角度由小排到大（即逆时针方向）。
+#小于。以users[0]（最左下的点）当中心点做角度排序，角度由小排到大（即逆时针方向）。
 #角度相同時，距离中心点较近的点排前面。
 def compare_angle(a,b):
     if (a[0] - datumPoint[0]) * (b[1] - datumPoint[1]) - (a[1] - datumPoint[1]) * (b[0] - datumPoint[0]) > 0 or ((a[0] - datumPoint[0]) * (b[1] - datumPoint[1]) - (a[1] - datumPoint[1]) * (b[0] - datumPoint[0]) == 0 and distance(a,datumPoint) < distance(b,datumPoint)):
@@ -177,7 +179,7 @@ def compare_angle(a,b):
 #users 用户位置list
 #Graham's Scan算法
 def convexHull(users):
-    users.sort(key=functools.cmp_to_key(compare_angle))
+    #users.sort(key=functools.cmp_to_key(compare_angle))
     outs = [[.0,.0]] * len(users)
     #MinIndex = users.index(min(users,key = compare_angle))
     #用最低最左边的点为起点
@@ -519,22 +521,29 @@ def main():
     global UAVs
     global UAVsLoc
 
+    #测试次数
     testCount=10
     #D/r
     DR=20
+    #用户数量
     userNum=400
+    #计算UAV半径
     UAVradius=1200/DR
     totalTime = 0
     count = 0
+
     for i in range(testCount):
+        #从文件中读取用户
         #usersLoc = getUserFromFile()
+        #随机生成用户
         usersLoc = getUserRandom(userNum)
-        #用户初始位置，从usersLoc中读取
         users.clear()
         for index, i in enumerate(usersLoc):
             users.append(common.sphere(16, 16, 0.1, i[0] / 120 - 5, i[1] / 120 - 5))
+        #找到最左下的点，赋值
         minIndex = usersLoc.index(min(usersLoc,key=lambda x:[x[1],x[0]]))
         datumPoint = np.array(usersLoc[minIndex])
+        #计算耗时
         start = time.time()
         UAVsLoc = planningUAV(usersLoc)
         end = time.time()
