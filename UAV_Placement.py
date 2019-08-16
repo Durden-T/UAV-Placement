@@ -71,7 +71,6 @@ def planningUAV(users):
         users_un_bo = convexHull(users_un)
         #for user in users_un_bo:
             #print(user[2])
-        #print('fuck')
         users_un_in = difference(users_un,users_un_bo)
 
         #if m == 1 :
@@ -105,6 +104,7 @@ def distance(a,b):
 def localCover(center,firstL,secondL):
     #UAV覆盖半径
     global UAVradius
+    new = center
     #循环直到secondL为空或return
     while secondL:
         for second in secondL.copy():
@@ -115,26 +115,25 @@ def localCover(center,firstL,secondL):
                     break
         for user in secondL.copy():
             #能够被覆盖s
-            if distance(user,center) < UAVradius:
+            if distance(user,new) < UAVradius:
                 firstL.append(user)
                 secondL.remove(user)
 
-        k = min(secondL,key=lambda x:distance(x,center),default=None)
+        k = min(secondL,key=lambda x:distance(x,new),default=None)
         if k:
-            #此时k为距离center最近的点
+            #此时k为距离new最近的点
             firstL.append(k)
             #先将k放入firstL中，调用oneCenter尝试观察：能否将firstL全部覆盖
             ans = oneCenter(firstL)
             if  ans[1] <= UAVradius:
                 #此时k已在firstL中，把k从secondL中删去，继续循环
                 secondL.remove(k)
-                center = ans[0]
+                new = ans[0]
             else:
                 #无法满足当前条件，将k从firstL中删去，返回
                 firstL.remove(k)
                 break
-    return center
-    
+    return new
 
 #向量OA叉积向量OB。大于0表示从OA到OB为逆时针旋转
 def cross(center,a,b):
@@ -226,7 +225,7 @@ def make_UAV(UAV):
     getMVP(x1, z1)
     UAV.draw()
 
-def make_userple(userple):
+def make_user(userple):
     userple.move_active += 1
     if userple.move_active == 250:
         userple.move_active = 0
@@ -339,7 +338,7 @@ def DrawGLScene():
     for pla in UAVs:
         make_UAV(pla)
     for user in users:
-        make_userple(user)
+        make_user(user)
 
     #glUseProgram(0)
     #glUseProgram(shaderall.particleProgram)
@@ -358,7 +357,7 @@ def DrawGLScene():
         dis = []
         #计算距离
         for _, pla in enumerate(UAVs):
-            dis.append((pla.x - user.x) * (pla.x - user.x) + (pla.z - user.z) * (pla.z - user.z))
+            dis.append((pla.x - user.x) ** 2 + (pla.z - user.z) ** 2)
         #根据无人机与人的距离，选择距离最近的无人机连线
         MinIndex = dis.index(min(dis))
         glVertex3f(UAVs[MinIndex].x, 0.7 + UAV_height, UAVs[MinIndex].z)
