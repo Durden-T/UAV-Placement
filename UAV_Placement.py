@@ -528,20 +528,26 @@ def main():
     global UAVs
     global UAVsLoc
 
-    #测试次数
-    testCount = 10
+    
     #D/r
-    DR = 20
+    DR = float(input('请输入地图边长D与UAV覆盖半径r之比：'))
     #用户数量
-    userNum = 400
+    #if os.path.exists('usersLoc.txt'):
+        #print('检测到usersLoc.txt文件，用户从文件中读取。')
+    #else:
+    userNum = int(input('请输入用户数量：'))
+    #测试次数
+    testCount = int(input('请输入测试次数：'))
     #计算UAV半径
     UAVradius = 1200 / DR
     totalTime = 0
     count = 0
 
     for i in range(testCount):
-        #从文件中读取用户
-        #usersLoc = getUserFromFile()
+        #if os.path.exists(usersLoc.txt):
+            #从文件中读取用户
+            #usersLoc = getUserFromFile()
+        #else:
         #随机生成用户
         usersLoc = getUserRandom(userNum)
         users.clear()
@@ -555,7 +561,7 @@ def main():
         end = time.time()
         totalTime = totalTime + (end - start)
         count = count + len(UAVsLoc)
-    print('K = {}, D/r = {}, {}\'s average cost {}ms,needs {} UAVs.'.format(userNum,DR,testCount,totalTime * 1000 / testCount,count / testCount))
+    print('{}次测试的平均耗时为{}ms,平均需要{}架UAVs.'.format(userNum,DR,testCount,totalTime * 1000 / testCount,count / testCount))
 
    
 
