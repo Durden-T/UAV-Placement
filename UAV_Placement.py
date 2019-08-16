@@ -19,7 +19,7 @@ window = None
 #精度控制
 eps = 1e-6
 #最左下的点 排序基准点
-datumPoint=[.0,.0]
+datumPoint = [.0,.0]
 #UAV覆盖半径
 UAVradius = 0
 # 飞机高度
@@ -32,7 +32,7 @@ UAVs = []
 #user结构list
 users = []
 #UAV坐标list
-UAVsLoc=[]
+UAVsLoc = []
 
 
 camera = common.camera()
@@ -104,7 +104,7 @@ def planningUAV(users):
 
         #在更新后的未被覆盖的边界点中选择一个临近旧center的点，作为新center。
         #若users_un已经为空赋NONE
-        k=users_un[0] if users_un else None
+        k = users_un[0] if users_un else None
 
         #for user in users_un_bo_new:
         #    if user[2] > k[2]:
@@ -124,6 +124,7 @@ def planningUAV(users):
         #center = users_un_bo[temp % len(users_un_bo)]
 def distance(a,b):
         return ((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2) ** 0.5
+
 
 #center 当前中心点
 #firstL 第一优先级的点的list 函数被调用前为 必须被 覆盖 调用后为已覆盖
@@ -375,7 +376,8 @@ def DrawGLScene():
     #    dis = []
     #    #计算距离
     #    for _, pla in enumerate(UAVs):
-    #        dis.append((pla.x - user.x) * (pla.x - user.x) + (pla.z - user.z) *
+    #        dis.append((pla.x - user.x) * (pla.x - user.x) + (pla.z - user.z)
+    #        *
     #        (pla.z - user.z))
     #    # print(dis)
     #    #根据无人机与人的距离，选择距离最近的无人机连线，目前只有两架无人机
@@ -464,12 +466,16 @@ def mouseButton(button, mode, x, y):
 	if button == GLUT_RIGHT_BUTTON:
 		camera.mouselocation = [x,y]
 
+
 def ReSizeGLScene(Width, Height): 
+    if Height == 0:
+        Height = 1
     glViewport(0, 0, Width, Height)
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     gluPerspective(45.0, float(Width) / float(Height), 0.1, 100.0)
     glMatrixMode(GL_MODELVIEW)
+
 
 #无人机移动 时钟信号回调
 def timerProc(id):
@@ -478,6 +484,7 @@ def timerProc(id):
         UAVs[index].move_location(UAVs[index].x,
         UAVs[index].z, float(i[0]) / 120 - 5, float(i[1]) / 120 - 5)
     glutTimerFunc(1000, timerProc, 1)
+
 
 ##location_index = 0
 ##用户移动 时钟信号回调
@@ -522,13 +529,13 @@ def main():
     global UAVsLoc
 
     #测试次数
-    testCount=10
+    testCount = 10
     #D/r
-    DR=20
+    DR = 20
     #用户数量
-    userNum=400
+    userNum = 400
     #计算UAV半径
-    UAVradius=1200/DR
+    UAVradius = 1200 / DR
     totalTime = 0
     count = 0
 
@@ -540,16 +547,15 @@ def main():
         users.clear()
         for index, i in enumerate(usersLoc):
             users.append(common.sphere(16, 16, 0.1, i[0] / 120 - 5, i[1] / 120 - 5))
-        #找到最左下的点，赋值
-        minIndex = usersLoc.index(min(usersLoc,key=lambda x:[x[1],x[0]]))
-        datumPoint = np.array(usersLoc[minIndex])
+        #找到最左下的点，给基准点赋值
+        datumPoint = min(usersLoc,key=lambda x:[x[1],x[0]])
         #计算耗时
         start = time.time()
         UAVsLoc = planningUAV(usersLoc)
         end = time.time()
-        totalTime=totalTime+(end - start)
-        count=count+len(UAVsLoc)
-    print('K = {}, D/r = {}, {}\'s average cost {}ms,needs {} UAVs.'.format(userNum,DR,testCount,totalTime * 1000/testCount,count/testCount))
+        totalTime = totalTime + (end - start)
+        count = count + len(UAVsLoc)
+    print('K = {}, D/r = {}, {}\'s average cost {}ms,needs {} UAVs.'.format(userNum,DR,testCount,totalTime * 1000 / testCount,count / testCount))
 
    
 
@@ -559,7 +565,8 @@ def main():
     #usersLoc = getUserRandom(userNum)
     ##用户初始位置，从usersLoc中读取
     #for index, i in enumerate(usersLoc):
-    #    users.append(common.sphere(16, 16, 0.1, i[0] / 120 - 5, i[1] / 120 - 5))
+    #    users.append(common.sphere(16, 16, 0.1, i[0] / 120 - 5, i[1] / 120 -
+    #    5))
     #minIndex = usersLoc.index(min(usersLoc,key=lambda x:[x[1],x[0]]))
     #datumPoint = np.array(usersLoc[minIndex])
     #start = time.time()
