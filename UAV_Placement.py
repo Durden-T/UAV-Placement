@@ -100,7 +100,7 @@ def distance(a,b):
 #center 当前中心点
 #firstL 第一优先级的点的list 函数被调用前为 必须被 覆盖 调用后为已覆盖
 #secondL 第二优先级的点的list 尽可能多 覆盖
-#会改变firstL的值
+#会改变firstL的值 secondL没用 可以直接操作  不担心损坏数据
 def localCover(center,firstL,secondL):
     #UAV覆盖半径
     global UAVradius
@@ -144,9 +144,9 @@ def cross(center,a,b):
 #角度相同時，距离中心点较近的点排前面。
 def compare_angle(a,b):
     if (a[0] - datumPoint[0]) * (b[1] - datumPoint[1]) - (a[1] - datumPoint[1]) * (b[0] - datumPoint[0]) > 0 or ((a[0] - datumPoint[0]) * (b[1] - datumPoint[1]) - (a[1] - datumPoint[1]) * (b[0] - datumPoint[0]) == 0 and distance(a,datumPoint) < distance(b,datumPoint)):
-        return 1
-    else:
         return -1
+    else:
+        return 1
 
 #解决凸包问题
 #users 用户位置list
@@ -471,24 +471,23 @@ def main():
     #D/r
     DR = float(input('请输入地图边长D与UAV覆盖半径r之比：'))
     #用户数量
-    #if os.path.exists('usersLoc.txt'):
-        #print('检测到usersLoc.txt文件，用户从文件中读取。')
-    #else:
-    userNum = int(input('请输入用户数量：'))
+    c = input('请选择用户输入方式\n1.随机生成\t2.从usersLoc.txt中读取\n')
+    if c == '1':
+        userNum = int(input('请输入用户数量：'))
     #测试次数
     testCount = int(input('请输入测试次数：'))
     #计算UAV半径
     UAVradius = 1200 / DR
     totalTime = 0
     count = 0
-
+    usersLoc = []
     for i in range(testCount):
-        #if os.path.exists(usersLoc.txt):
+        if c == '2':
             #从文件中读取用户
-            #usersLoc = getUserFromFile()
-        #else:
+            usersLoc = getUserFromFile()
+        else:
         #随机生成用户
-        usersLoc = getUserRandom(userNum)
+            usersLoc = getUserRandom(userNum)
         users.clear()
         for index, i in enumerate(usersLoc):
             users.append(common.sphere(16, 16, 0.1, i[0] / 120 - 5, i[1] / 120 - 5))
@@ -517,7 +516,7 @@ def main():
     # 窗口大小设置
     glutInitWindowSize(1920,1080)
     glutInitWindowPosition(0,0)
-    window = glutCreateWindow(b"opengl")
+    window = glutCreateWindow(b"UAV-Placement")
 
     # 为当前窗口设置显示回调函数
     glutDisplayFunc(DrawGLScene)

@@ -1,5 +1,4 @@
 ﻿#sphere,UAV,camera的定义与实现
-
 import math
 from OpenGL.GL import *
 from OpenGL.arrays import vbo
@@ -8,7 +7,6 @@ from OpenGL.GLUT import *
 #import OpenGL.GLUT as glut
 import numpy as np
 #Python Imaging Library (PIL)
-
 class common:
     #判断是否已初始化
     bCreate = False
@@ -16,7 +14,7 @@ class common:
 #球的实现
 class sphere(common):
 
-    #方向 x轴z轴水平面 y轴垂直??? xz 好像不是这样 靠
+    #方向 x轴z轴水平面 y轴垂直???  xz 好像不是这样 靠
     def __init__(this,rings,segments,radius, x, z):
         this.rings = rings
         this.segments = segments
@@ -124,7 +122,6 @@ class sphere(common):
     #        this.move(3)
     #    if key == GLUT_KEY_F9:
     #        this.move(4)
-
 
 class UAV(common):
 
@@ -282,7 +279,8 @@ class camera:
         if this.__bthree :
             xstep = -xstep
             zstep = -zstep
-        #print([this.origin[0] + xstep,this.origin[1] + y,this.origin[2] + zstep])
+        #print([this.origin[0] + xstep,this.origin[1] + y,this.origin[2] +
+        #zstep])
         this.origin = [this.origin[0] + xstep,this.origin[1] + y,this.origin[2] + zstep]
 
 
@@ -303,29 +301,6 @@ class camera:
             # 第二组centerx,centery,centerz 相机镜头对准的物体在世界坐标的位置
             # 第三组upx,upy,upz 相机向上的方向在世界坐标中的方向
             gluLookAt(ve[0],ve[1],ve[2],vt[0],vt[1],vt[2],0.0,1.0,0.0)
-
-
-    #没用到
-    #def keypress(this,key, x, y):
-    #    if key == GLUT_KEY_UP:
-    #        this.move(0., 0., 1 * this.offest)
-    #    if key == GLUT_KEY_RIGHT:
-    #        this.move(-1 * this.offest, 0., 0.)
-    #    if key == GLUT_KEY_LEFT:
-    #        this.move(1 * this.offest, 0., 0.)
-    #    if key == GLUT_KEY_DOWN:
-    #        this.move(0., 0., -1 * this.offest)
-    #    if key == GLUT_KEY_F1:
-    #        this.move(0., 1 * this.offest, 0.)
-    #    if key == GLUT_KEY_F2:
-    #        this.move(0., -1 * this.offest, 0.)
-    #    if key == GLUT_KEY_F3:
-    #        # this.__bthree = not this.__bthree
-    #        this.setthree(not this.__bthree)
-    #    if key == GLUT_KEY_F4:
-    #        this.offest = this.offest + 0.1
-    #    if key == GLUT_KEY_F5:
-    #        this.offest = this.offest - 0.1
 
 
     #鼠标移动回调
