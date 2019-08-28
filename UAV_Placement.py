@@ -59,9 +59,11 @@ def difference(a,b):
 #users 用户位置list
 def planningUAV(users):
     #先按逆时针排序，以后不用再次排
-    users.sort(key=functools.cmp_to_key(compare_angle))
+    #users.sort(key=functools.cmp_to_key(compare_angle))
     #k直接选取第一个，便于后续确定下一个点（每次把当前第一个点取出)，随机取也可，效果没有什么不同
-    k = users[0]
+    global datumPoint
+    datumPoint=min(users,key=lambda x:[x[1],x[0]])
+    users.sort(key=functools.cmp_to_key(compare_angle))
     UAVsLoc = []
     users_un = users
     #m = 1
@@ -69,8 +71,9 @@ def planningUAV(users):
     while users_un:     
         # 由未被覆盖的用户来重新构造新的边界线。
         users_un_bo = convexHull(users_un)
-        #for user in users_un_bo:
-            #print(user[2])
+        if not users_un_bo:
+            break
+        k = users_un_bo[0]
         users_un_in = difference(users_un,users_un_bo)
 
         #if m == 1 :
@@ -88,8 +91,7 @@ def planningUAV(users):
 
         #在更新后的未被覆盖的边界点中选择一个临近旧center的点，作为新center。
         #若users_un已经为空赋NONE
-        k = users_un[0] if users_un else None
-
+      
     return UAVsLoc
 
 
@@ -100,7 +102,7 @@ def distance(a,b):
 #center 当前中心点
 #firstL 第一优先级的点的list 函数被调用前为 必须被 覆盖 调用后为已覆盖
 #secondL 第二优先级的点的list 尽可能多 覆盖
-#会改变firstL的值 secondL没用 可以直接操作  不担心损坏数据
+#会改变firstL的值 secondL没用 可以直接操作 不担心损坏数据
 def localCover(center,firstL,secondL):
     #UAV覆盖半径
     global UAVradius
@@ -110,6 +112,7 @@ def localCover(center,firstL,secondL):
         for second in secondL.copy():
             for first in firstL:
                 #距离大于2倍半径 无法覆盖
+                
                 if distance(second,first) > 2 * UAVradius:
                     secondL.remove(second)
                     break
@@ -134,7 +137,7 @@ def localCover(center,firstL,secondL):
                 firstL.remove(k)
                 break
     return new
-
+        #print(firstL)
 #向量OA叉积向量OB。大于0表示从OA到OB为逆时针旋转
 def cross(center,a,b):
     return (a[0] - center[0]) * (b[1] - center[1]) - (a[1] - center[1]) * (b[0] - center[0])
@@ -143,7 +146,8 @@ def cross(center,a,b):
 #小于。以users[0]（最左下的点）当中心点做角度排序，角度由小排到大（即逆时针方向）。
 #角度相同時，距离中心点较近的点排前面。
 def compare_angle(a,b):
-    if (a[0] - datumPoint[0]) * (b[1] - datumPoint[1]) - (a[1] - datumPoint[1]) * (b[0] - datumPoint[0]) > 0 or ((a[0] - datumPoint[0]) * (b[1] - datumPoint[1]) - (a[1] - datumPoint[1]) * (b[0] - datumPoint[0]) == 0 and distance(a,datumPoint) < distance(b,datumPoint)):
+    t = cross(datumPoint,a,b)
+    if t > 0 or (t == 0 and distance(a,datumPoint) < distance(b,datumPoint)):
         return -1
     else:
         return 1
@@ -152,24 +156,27 @@ def compare_angle(a,b):
 #users 用户位置list
 #Graham's Scan算法
 def convexHull(users):
-    #users.sort(key=functools.cmp_to_key(compare_angle))
-    outs = [[.0,.0]] * len(users)
-    #调用前users已经是排好序的
-    m = 0
-    for i in range(len(users)):
+    ##找到最左下的点，给基准点赋值
+    if len(users) < 2:
+        return []
+    i = users.index(min(users,key=lambda x:[x[1],x[0]]))
+    datumPoint = users[i]
+    del users[i]
+    users.sort(key=functools.cmp_to_key(compare_angle))
+    outs = [datumPoint,users[0]]
+    top = 2
+    for i in range(1,len(users)):
         #擦除凹陷的点
-        while (m >= 2 and cross(outs[m - 2],outs[m - 1],users[i]) <= 0):
-            m = m - 1
-        outs[m] = users[i]
-        m = m + 1
-    return [user for user in outs if user != [.0,.0]]
+        while len(outs) >= 2 and cross(outs[-1],outs[- 2],users[i]) > 0:
+            outs.pop()
+        outs.append(users[i])
+    return outs
 
 #获取i,j,k的外接圆,返回圆心,解三元二次方程
 def getCentre(i,j,k):
-        a,b,c,d = i[0] - j[0],i[1] - j[1],(j[0] ** 2 + j[1] ** 2 - i[0] ** 2 - i[1] ** 2) / 2,i[0] - k[0]
-        e,f = i[1] - k[1],(k[0] ** 2 + k[1] ** 2 - i[0] ** 2 - i[1] ** 2) / 2
-        return [(f * a - c * d) / (b * d - e * a),(f * b - c * e) / (a * e - b * d)]
-       
+        a,b,c,d = j[0] - i[0],j[1] - i[1],k[0] - j[0],k[1] - j[1]
+        e,f = j[0] ** 2 + j[1] ** 2 - i[0] ** 2 - i[1] ** 2,k[0] ** 2 + k[1] ** 2 - j[0] ** 2 - j[1] ** 2,
+        return [(f * b - e * d) / (c * b - a * d)/2.0,(a * f - e * c) / (a * d - b * c)/2.0]
 
 
 #放置中心点，返回半径
@@ -179,8 +186,8 @@ def oneCenter(points):
     #随机化
     random.shuffle(points)
     #center,radius分别为圆心，半径
-    center,radius = points[0],0
-    for i in range(1,len(points)):
+    center,radius = points[0],.0
+    for i in range(len(points)):
         #i不在当前圆内,通过精度比较，差距在1eps内可通过
         if distance(center,points[i]) - radius > eps:
             #当前圆变为以i为圆心，枚举第二个点j
@@ -190,13 +197,14 @@ def oneCenter(points):
                 if distance(center,points[j]) - radius > eps:
                     #当前圆变为以i,j为直径的圆，枚举第三个点k
                     center = [(points[i][0] + points[j][0]) / 2.0,(points[i][1] + points[j][1]) / 2.0]
-                    radius = distance(points[i],points[j]) / 2.0
+                    radius = distance(points[i],center)
                     for k in range(j):
                         if distance(center,points[k]) - radius > eps:
                             #当前圆变为i,j,k的外接圆
                             center = getCentre(points[i],points[j],points[k])
                             radius = distance(points[i],center)
     return [center,radius]
+
 
 def make_UAV(UAV):
     UAV.move_active += 1
@@ -461,7 +469,6 @@ def keypress(key, x, y):
 def main():
     global window
     global UAVradius
-    global datumPoint
     global UAVs
     global UAVsLoc
     global colorMap
@@ -491,8 +498,6 @@ def main():
         users.clear()
         for index, i in enumerate(usersLoc):
             users.append(common.sphere(16, 16, 0.1, i[0] / 120 - 5, i[1] / 120 - 5))
-        #找到最左下的点，给基准点赋值
-        datumPoint = min(usersLoc,key=lambda x:[x[1],x[0]])
         #计算耗时
         start = time.time()
         UAVsLoc = planningUAV(usersLoc)

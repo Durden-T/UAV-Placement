@@ -306,7 +306,7 @@ class camera:
     #鼠标移动回调
     def mouse(this,x,y):  
         rx = (x - this.mouselocation[0]) * this.offest * 0.1
-        ry = (y - this.mouselocation[1]) * this.offest * -0.1
+        ry = (y - this.mouselocation[1]) * this.offest * .0
         this.rotate(rx,ry)
         #print x,y
         this.mouselocation = [x,y]
