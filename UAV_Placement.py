@@ -9,6 +9,8 @@ import numpy as np
 import random
 import copy
 import time
+
+
 import common
 import shaderProg
 import loadTexture
@@ -50,19 +52,18 @@ z = 0
 
 #用于求差集
 def difference(a,b):
-    ret = []
-    for i in a :
-        if i not in b:
-            ret.append(i)
-    return ret
+    #ret = []
+    #for i in a :
+    #    if i not in b:
+    #        ret.append(i)
+    #return ret
+    return [i for i in a if i not in b]
 
 #users 用户位置list
 def planningUAV(users):
-    #先按逆时针排序，以后不用再次排
-    #users.sort(key=functools.cmp_to_key(compare_angle))
-    #k直接选取第一个，便于后续确定下一个点（每次把当前第一个点取出)，随机取也可，效果没有什么不同
+    #先按逆时针排序，便于后续确定下一个k的位置
     global datumPoint
-    datumPoint=min(users,key=lambda x:[x[1],x[0]])
+    datumPoint = min(users,key=lambda x:[x[1],x[0]])
     users.sort(key=functools.cmp_to_key(compare_angle))
     UAVsLoc = []
     users_un = users
@@ -71,6 +72,7 @@ def planningUAV(users):
     while users_un:     
         # 由未被覆盖的用户来重新构造新的边界线。
         users_un_bo = convexHull(users_un)
+        #在更新后的未被覆盖的边界点中选择一个临近旧center的点，作为新center。
         if not users_un_bo:
             break
         k = users_un_bo[0]
@@ -88,10 +90,7 @@ def planningUAV(users):
         #m = m + 1
         
         UAVsLoc.append(center)
-
-        #在更新后的未被覆盖的边界点中选择一个临近旧center的点，作为新center。
-        #若users_un已经为空赋NONE
-      
+        
     return UAVsLoc
 
 
@@ -112,7 +111,6 @@ def localCover(center,firstL,secondL):
         for second in secondL.copy():
             for first in firstL:
                 #距离大于2倍半径 无法覆盖
-                
                 if distance(second,first) > 2 * UAVradius:
                     secondL.remove(second)
                     break
@@ -147,24 +145,21 @@ def cross(center,a,b):
 #角度相同時，距离中心点较近的点排前面。
 def compare_angle(a,b):
     t = cross(datumPoint,a,b)
-    if t > 0 or (t == 0 and distance(a,datumPoint) < distance(b,datumPoint)):
-        return -1
-    else:
-        return 1
+    return -1 if (t > 0 or (t == 0 and distance(a,datumPoint) < distance(b,datumPoint))) else 1
 
 #解决凸包问题
 #users 用户位置list
 #Graham's Scan算法
 def convexHull(users):
-    ##找到最左下的点，给基准点赋值
     if len(users) < 2:
-        return []
-    i = users.index(min(users,key=lambda x:[x[1],x[0]]))
-    datumPoint = users[i]
-    del users[i]
-    users.sort(key=functools.cmp_to_key(compare_angle))
+        return users
+    #可经过论证，无需再次排序
+    #找到最左下的点，给基准点赋值
+    #i = users.index(min(users,key=lambda x:[x[1],x[0]]))
+    datumPoint = users[0]
+    del users[0]
+    #users.sort(key=functools.cmp_to_key(compare_angle))
     outs = [datumPoint,users[0]]
-    top = 2
     for i in range(1,len(users)):
         #擦除凹陷的点
         while len(outs) >= 2 and cross(outs[-1],outs[- 2],users[i]) > 0:
@@ -175,13 +170,13 @@ def convexHull(users):
 #获取i,j,k的外接圆,返回圆心,解三元二次方程
 def getCentre(i,j,k):
         a,b,c,d = j[0] - i[0],j[1] - i[1],k[0] - j[0],k[1] - j[1]
-        e,f = j[0] ** 2 + j[1] ** 2 - i[0] ** 2 - i[1] ** 2,k[0] ** 2 + k[1] ** 2 - j[0] ** 2 - j[1] ** 2,
-        return [(f * b - e * d) / (c * b - a * d)/2.0,(a * f - e * c) / (a * d - b * c)/2.0]
+        e,f = j[0] ** 2 + j[1] ** 2 - i[0] ** 2 - i[1] ** 2,k[0] ** 2 + k[1] ** 2 - j[0] ** 2 - j[1] ** 2
+        return [(f * b - e * d) / (c * b - a * d) / 2.0,(a * f - e * c) / (a * d - b * c) / 2.0]
 
 
 #放置中心点，返回半径
 #最小圆覆盖问题 见https://blog.csdn.net/wu_tongtong/article/details/79362339
-#随机增量法 时空复杂度均为O(n)(玄学)
+#随机增量法 时空复杂度均为O(n)
 def oneCenter(points):
     #随机化
     random.shuffle(points)
@@ -358,7 +353,7 @@ def DrawGLScene():
 
     glUseProgram(0)
     glColor3f(0.9, 0.9, 0.9)
-    glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, ord('a'))
+    #glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, ord('a'))
     glLineWidth(2)
     glBegin(GL_LINES)
     for user in users:
@@ -475,12 +470,13 @@ def main():
     global hightMap
     global shaderall
 
-    #D/r
-    DR = float(input('请输入地图边长D与UAV覆盖半径r之比：'))
+    
     #用户数量
     c = input('请选择用户输入方式\n1.随机生成\t2.从usersLoc.txt中读取\n')
     if c == '1':
         userNum = int(input('请输入用户数量：'))
+    #D/r
+    DR = float(input('请输入地图边长D与UAV覆盖半径r之比：'))
     #测试次数
     testCount = int(input('请输入测试次数：'))
     #计算UAV半径
@@ -489,12 +485,12 @@ def main():
     count = 0
     usersLoc = []
     for i in range(testCount):
-        if c == '2':
+        if c == '1':
+            #随机生成用户
+            usersLoc = getUserRandom(userNum)
+        else:
             #从文件中读取用户
             usersLoc = getUserFromFile()
-        else:
-        #随机生成用户
-            usersLoc = getUserRandom(userNum)
         users.clear()
         for index, i in enumerate(usersLoc):
             users.append(common.sphere(16, 16, 0.1, i[0] / 120 - 5, i[1] / 120 - 5))

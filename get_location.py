@@ -20,8 +20,9 @@ def getUserFromFile():
 
 
 def getUserRandom(count):
-    usersLoc = []
-    for i in range(count):
-        usersLoc.append([random.uniform(1,1200),random.uniform(1,1200)])
-        #print(usersLoc[i])
-    return usersLoc
+    return [[random.uniform(1,1200),random.uniform(1,1200)] for i in range(count)]
+    #usersLoc = []
+    #for i in range(count):
+    #    usersLoc.append([random.uniform(1,1200),random.uniform(1,1200)])
+    #    #print(usersLoc[i])
+    #return usersLoc
