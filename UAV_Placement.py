@@ -159,7 +159,7 @@ def convexHull(users):
     datumPoint = users[0]
     cmp=functools.partial(compare_angle,datumPoint)
     users.sort(key=functools.cmp_to_key(cmp))
-    outs = [users[0],users[1]]
+    outs = users[:2]
     for i in range(2,len(users)):
         #擦除凹陷的点
         while len(outs) >= 2 and cross(outs[-1],outs[- 2],users[i]) > 0:
