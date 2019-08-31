@@ -20,8 +20,6 @@ from get_location import *
 window = None
 #精度控制
 eps = 1e-6
-#最左下的点 排序基准点
-datumPoint = [.0,.0]
 #UAV覆盖半径
 UAVradius = 0
 # 飞机高度
@@ -61,10 +59,11 @@ def difference(a,b):
 
 #users 用户位置list
 def planningUAV(users):
-    #先按逆时针排序，便于后续确定下一个k的位置
-    global datumPoint
+    #最左下的点 排序基准点
     datumPoint = min(users,key=lambda x:[x[1],x[0]])
-    users.sort(key=functools.cmp_to_key(compare_angle))
+    #先按逆时针排序，便于后续确定下一个k的位置
+    cmp=functools.partial(compare_angle,datumPoint)
+    users.sort(key=functools.cmp_to_key(cmp))
     UAVsLoc = []
     users_un = users
     #m = 1
@@ -75,9 +74,10 @@ def planningUAV(users):
         #在更新后的未被覆盖的边界点中选择一个临近旧center的点，作为新center。
         if not users_un_bo:
             break
+        #起初排过序，此时第一个点本来就是随机的，直接选择第一个点
         k = users_un_bo[0]
         users_un_in = difference(users_un,users_un_bo)
-
+        #起初排过序，此时第一个点本来就是随机的
         #if m == 1 :
             #k = random.choice(users_un_bo)
 
@@ -143,9 +143,9 @@ def cross(center,a,b):
 
 #小于。以users[0]（最左下的点）当中心点做角度排序，角度由小排到大（即逆时针方向）。
 #角度相同時，距离中心点较近的点排前面。
-def compare_angle(a,b):
-    t = cross(datumPoint,a,b)
-    return -1 if (t > 0 or (t == 0 and distance(a,datumPoint) < distance(b,datumPoint))) else 1
+def compare_angle(o,a,b):
+    t = cross(o,a,b)
+    return -1 if (t > 0 or (t == 0 and distance(a,o) < distance(b,o))) else 1
 
 #解决凸包问题
 #users 用户位置list
@@ -153,14 +153,14 @@ def compare_angle(a,b):
 def convexHull(users):
     if len(users) < 2:
         return users
-    #可经过论证，无需再次排序
     #找到最左下的点，给基准点赋值
     #i = users.index(min(users,key=lambda x:[x[1],x[0]]))
+    #经过论证，无需再次排序,此时第一个仍为最下左的点
     datumPoint = users[0]
-    del users[0]
-    #users.sort(key=functools.cmp_to_key(compare_angle))
-    outs = [datumPoint,users[0]]
-    for i in range(1,len(users)):
+    cmp=functools.partial(compare_angle,datumPoint)
+    users.sort(key=functools.cmp_to_key(cmp))
+    outs = [users[0],users[1]]
+    for i in range(2,len(users)):
         #擦除凹陷的点
         while len(outs) >= 2 and cross(outs[-1],outs[- 2],users[i]) > 0:
             outs.pop()
@@ -472,7 +472,7 @@ def main():
 
     
     #用户数量
-    c = input('请选择用户输入方式\n1.随机生成\t2.从usersLoc.txt中读取\n')
+    c = input('请选择用户位置输入方式\n1.随机生成\t2.从usersLoc.txt中读取\n')
     if c == '1':
         userNum = int(input('请输入用户数量：'))
     #D/r
@@ -480,9 +480,9 @@ def main():
     #测试次数
     testCount = int(input('请输入测试次数：'))
     #计算UAV半径
-    UAVradius = 1200 / DR
-    totalTime = 0
-    count = 0
+    UAVradius = 1200.0 / DR
+    totalTime = .0
+    count = .0
     usersLoc = []
     for i in range(testCount):
         if c == '1':
@@ -500,7 +500,7 @@ def main():
         end = time.time()
         totalTime = totalTime + (end - start)
         count = count + len(UAVsLoc)
-    print('{}次测试的平均耗时为{}ms,平均需要{}架无人机。'.format(testCount,totalTime * 1000 / testCount,count / testCount))
+    print('{}次测试的平均耗时为{:.3f}ms,平均需要{}架无人机。'.format(testCount,totalTime * 1000 / testCount,count / testCount))
 
     #无人机初始位置
     for i in range(len(UAVsLoc)):
