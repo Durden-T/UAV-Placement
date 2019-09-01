@@ -64,9 +64,9 @@ def planningUAV(users):
     #先按逆时针排序，便于后续确定下一个k的位置
     cmp = functools.partial(compare_angle,datumPoint)
     users.sort(key=functools.cmp_to_key(cmp))
+
     UAVsLoc = []
     users_un = users
-    k = None
     #m = 1
     #当仍存在未被覆盖的用户时
     while users_un:     
@@ -75,22 +75,21 @@ def planningUAV(users):
         #在更新后的未被覆盖的边界点中选择一个临近旧center的点，作为新center。
         if not users_un_bo:
             break
-
-        k = min(users_un_bo,key=lambda x:distance(k,x)) if k else users_un_bo[0]
+        #起初排过序，可证此时无需再次排，第一个一定有效
+        k = users_un_bo[0]
 
         users_un_in = difference(users_un,users_un_bo)
-
         #if m == 1 :
             #k = random.choice(users_un_bo)
 
         users_bo = [k] #当前情况下覆盖的边界点
         center = localCover(k,users_bo,difference(users_un_bo,users_bo))
         users_un_bo_new = difference(users_un_bo,users_bo) #更新未被覆盖的边界点
+
         center = localCover(center,users_bo,users_un_in) #调用完后new为刚被覆盖的所有点
-        users_un = difference(users_un,users_bo)
-        
+        users_un = difference(users_un,users_bo)    
+
         #m = m + 1
-        
         UAVsLoc.append(center)
         
     return UAVsLoc
