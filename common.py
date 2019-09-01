@@ -122,7 +122,6 @@ class sphere(common):
     #        this.move(3)
     #    if key == GLUT_KEY_F9:
     #        this.move(4)
-
 class UAV(common):
 
     def __init__(this,xres,yres,xscale,yscale):
@@ -235,8 +234,8 @@ class camera:
     yangle = 0.
     zangle = 0.
     __bthree = True
-    #俯视
-    overlook = True
+    #p视
+    overlook = False
 
     def __init__(this):
         this.mouselocation = [0.0,0.0]
@@ -290,7 +289,7 @@ class camera:
 
 
     def setLookat(this):
-        if this.overlook:
+        if not this.overlook:
             ve,vt = this.eye(),this.target()
             # 其功能是用一个4×4的单位矩阵来替换当前矩阵，实际上就是对当前矩阵进行初始化。也就是说，
             # 无论以前进行了多少次矩阵变换，在该命令执行后，当前矩阵均恢复成一个单位矩阵，即相当于没有进行任何矩阵变换状态。
@@ -306,7 +305,8 @@ class camera:
     #鼠标移动回调
     def mouse(this,x,y):  
         rx = (x - this.mouselocation[0]) * this.offest * 0.1
-        ry = (y - this.mouselocation[1]) * this.offest * .0
+        #ry = (y - this.mouselocation[1]) * this.offest * .0
+        ry = 0
         this.rotate(rx,ry)
         #print x,y
         this.mouselocation = [x,y]
@@ -315,8 +315,8 @@ class camera:
     #俯视图
     def change_overlook(this):
         this.overlook = not this.overlook
-        gluLookAt(0, 12, 0, 0, 0, 0, 1.0, 0, 0.0)
-
+        gluLookAt(0, 12, 0, 0, 0, 0, 1, 0, 0)
+        this.setLookat()
 
 
         

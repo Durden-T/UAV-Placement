@@ -62,10 +62,11 @@ def planningUAV(users):
     #最左下的点 排序基准点
     datumPoint = min(users,key=lambda x:[x[1],x[0]])
     #先按逆时针排序，便于后续确定下一个k的位置
-    cmp=functools.partial(compare_angle,datumPoint)
+    cmp = functools.partial(compare_angle,datumPoint)
     users.sort(key=functools.cmp_to_key(cmp))
     UAVsLoc = []
     users_un = users
+    k = None
     #m = 1
     #当仍存在未被覆盖的用户时
     while users_un:     
@@ -74,10 +75,11 @@ def planningUAV(users):
         #在更新后的未被覆盖的边界点中选择一个临近旧center的点，作为新center。
         if not users_un_bo:
             break
-        #起初排过序，此时第一个点本来就是随机的，直接选择第一个点
-        k = users_un_bo[0]
+
+        k = min(users_un_bo,key=lambda x:distance(k,x)) if k else users_un_bo[0]
+
         users_un_in = difference(users_un,users_un_bo)
-        #起初排过序，此时第一个点本来就是随机的
+
         #if m == 1 :
             #k = random.choice(users_un_bo)
 
@@ -157,7 +159,7 @@ def convexHull(users):
     #i = users.index(min(users,key=lambda x:[x[1],x[0]]))
     #经过论证，无需再次排序,此时第一个仍为最下左的点
     datumPoint = users[0]
-    cmp=functools.partial(compare_angle,datumPoint)
+    cmp = functools.partial(compare_angle,datumPoint)
     users.sort(key=functools.cmp_to_key(cmp))
     outs = users[:2]
     for i in range(2,len(users)):
@@ -171,7 +173,8 @@ def convexHull(users):
 def getCentre(i,j,k):
         a,b,c,d = j[0] - i[0],j[1] - i[1],k[0] - j[0],k[1] - j[1]
         e,f = j[0] ** 2 + j[1] ** 2 - i[0] ** 2 - i[1] ** 2,k[0] ** 2 + k[1] ** 2 - j[0] ** 2 - j[1] ** 2
-        return [(f * b - e * d) / (c * b - a * d) / 2.0,(a * f - e * c) / (a * d - b * c) / 2.0]
+        return [(f * b - e * d) / (c * b - a * d) / 2.0,
+                (a * f - e * c) / (a * d - b * c) / 2.0]
 
 
 #放置中心点，返回半径
@@ -186,7 +189,7 @@ def oneCenter(points):
         #i不在当前圆内,通过精度比较，差距在1eps内可通过
         if distance(center,points[i]) - radius > eps:
             #当前圆变为以i为圆心，枚举第二个点j
-            center,radius = points[i],0
+            center,radius = points[i],.0
             for j in range(i):
                 #j不在当前圆内
                 if distance(center,points[j]) - radius > eps:
@@ -421,8 +424,7 @@ def ReSizeGLScene(Width, Height):
 def timerProc(id):
     for index, i in enumerate(UAVsLoc):
         #print(index, i)
-        UAVs[index].move_location(UAVs[index].x,
-        UAVs[index].z, float(i[0]) / 120 - 5, float(i[1]) / 120 - 5)
+        UAVs[index].move_location(UAVs[index].x,UAVs[index].z, float(i[0]) / 120 - 5, float(i[1]) / 120 - 5)
     glutTimerFunc(1000, timerProc, 1)
 
 
