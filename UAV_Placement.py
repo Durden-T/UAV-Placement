@@ -3,7 +3,7 @@ from OpenGL.GLUT import *
 from OpenGL.GLU import *
 from OpenGL.GL import shaders
 from PIL.Image import *
-import functools
+from functools import cmp_to_key,partial
 import sys
 import numpy as np
 import random
@@ -28,11 +28,11 @@ UAV_height = 2.6
 UAV_size = 120
 
 #UAV结构list
-UAVs = []
+UAVs = [ ]
 #user结构list
-users = []
+users = [ ]
 #UAV坐标list
-UAVsLoc = []
+UAVsLoc = [ ]
 
 
 camera = common.camera()
@@ -56,25 +56,25 @@ def difference(a,b):
     #        ret.append(i)
     #return ret
     return [i for i in a if i not in b]
+	
 
 #users 用户位置list
 def planningUAV(users):
     #最左下的点 排序基准点
     datumPoint = min(users,key=lambda x:[x[1],x[0]])
     #先按逆时针排序，便于后续确定下一个k的位置
-    cmp = functools.partial(compare_angle,datumPoint)
-    users.sort(key=functools.cmp_to_key(cmp))
+    cmp = partial(compare_angle,datumPoint)
+    users.sort(key=cmp_to_key(cmp))
 
-    UAVsLoc = []
+    UAVsLoc = [ ]
     users_un = users
+    users_un_bo = [None]
     #m = 1
     #当仍存在未被覆盖的用户时
-    while users_un:     
-        # 由未被覆盖的用户来重新构造新的边界线。
+    while users_un and users_un_bo:     
+        # 由未被覆盖的用户来重新构造新的边界线
         users_un_bo = convexHull(users_un)
-        #在更新后的未被覆盖的边界点中选择一个临近旧center的点，作为新center。
-        if not users_un_bo:
-            break
+        #在更新后的未被覆盖的边界点中选择一个临近旧center的点，作为新center
         #起初排过序，可证此时无需再次排，第一个一定有效
         k = users_un_bo[0]
 
@@ -121,8 +121,8 @@ def localCover(center,firstL,secondL):
                 firstL.append(user)
                 secondL.remove(user)
 
-        k = min(secondL,key=lambda x:distance(x,new),default=None)
-        if k:
+        if secondL:
+            k = min(secondL,key=partial(distance,new))
             #此时k为距离new最近的点
             firstL.append(k)
             #先将k放入firstL中，调用oneCenter尝试观察：能否将firstL全部覆盖
@@ -136,7 +136,9 @@ def localCover(center,firstL,secondL):
                 firstL.remove(k)
                 break
     return new
-        #print(firstL)
+
+
+
 #向量OA叉积向量OB。大于0表示从OA到OB为逆时针旋转
 def cross(center,a,b):
     return (a[0] - center[0]) * (b[1] - center[1]) - (a[1] - center[1]) * (b[0] - center[0])
@@ -156,10 +158,9 @@ def convexHull(users):
         return users
     #找到最左下的点，给基准点赋值
     #i = users.index(min(users,key=lambda x:[x[1],x[0]]))
-    #经过论证，无需再次排序,此时第一个仍为最下左的点
     datumPoint = users[0]
-    cmp = functools.partial(compare_angle,datumPoint)
-    users.sort(key=functools.cmp_to_key(cmp))
+    cmp = partial(compare_angle,datumPoint)
+    users.sort(key=cmp_to_key(cmp))
     outs = users[:2]
     for i in range(2,len(users)):
         #擦除凹陷的点
@@ -172,8 +173,8 @@ def convexHull(users):
 def getCentre(i,j,k):
         a,b,c,d = j[0] - i[0],j[1] - i[1],k[0] - j[0],k[1] - j[1]
         e,f = j[0] ** 2 + j[1] ** 2 - i[0] ** 2 - i[1] ** 2,k[0] ** 2 + k[1] ** 2 - j[0] ** 2 - j[1] ** 2
-        return [(f * b - e * d) / (c * b - a * d) / 2.0,
-                (a * f - e * c) / (a * d - b * c) / 2.0]
+        return [(f * b - e * d) / (c * b - a * d) / 2,
+                (a * f - e * c) / (a * d - b * c) / 2]
 
 
 #放置中心点，返回半径
@@ -183,24 +184,24 @@ def oneCenter(points):
     #随机化
     random.shuffle(points)
     #center,radius分别为圆心，半径
-    center,radius = points[0],.0
+    center,radius = points[0],0
     for i in range(len(points)):
         #i不在当前圆内,通过精度比较，差距在1eps内可通过
         if distance(center,points[i]) - radius > eps:
             #当前圆变为以i为圆心，枚举第二个点j
-            center,radius = points[i],.0
+            center,radius = points[i],0
             for j in range(i):
                 #j不在当前圆内
                 if distance(center,points[j]) - radius > eps:
                     #当前圆变为以i,j为直径的圆，枚举第三个点k
-                    center = [(points[i][0] + points[j][0]) / 2.0,(points[i][1] + points[j][1]) / 2.0]
+                    center = [(points[i][0] + points[j][0]) / 2,(points[i][1] + points[j][1]) / 2]
                     radius = distance(points[i],center)
                     for k in range(j):
                         if distance(center,points[k]) - radius > eps:
                             #当前圆变为i,j,k的外接圆
                             center = getCentre(points[i],points[j],points[k])
                             radius = distance(points[i],center)
-    return [center,radius]
+    return (center,radius)
 
 
 def make_UAV(UAV):
@@ -318,7 +319,7 @@ def userple_move(userple, x, z):
     getMVP(x1, z1)
     userple.draw()
 
-def DrawGLScene():
+def DrawGLScene( ):
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     # 将当前矩阵指定为投影矩阵。参数是GL_MODELVIEW，这个是对模型视景的操作，接下来的语句描绘一个以模型为基础的适应，这样来设置参数
     glMatrixMode(GL_MODELVIEW)
@@ -359,13 +360,9 @@ def DrawGLScene():
     glLineWidth(2)
     glBegin(GL_LINES)
     for user in users:
-        dis = []
-        #计算距离
-        for _, pla in enumerate(UAVs):
-            dis.append((pla.x - user.x) ** 2 + (pla.z - user.z) ** 2)
         #根据无人机与人的距离，选择距离最近的无人机连线
-        MinIndex = dis.index(min(dis))
-        glVertex3f(UAVs[MinIndex].x, 0.7 + UAV_height, UAVs[MinIndex].z)
+        nearest = min(UAVs,key=lambda pla:(pla.x - user.x) ** 2 + (pla.z - user.z) ** 2)
+        glVertex3f(nearest.x, 0.7 + UAV_height, nearest.z)
         glVertex3f(user.x, UAV.getHeight(user.x, user.z) + 0.1, user.z)
     glEnd()
 
@@ -462,7 +459,7 @@ def keypress(key, x, y):
 
 
 #地图大小1200*1200
-def main():
+def main( ):
     global window
     global UAVradius
     global UAVs
@@ -481,10 +478,10 @@ def main():
     #测试次数
     testCount = int(input('请输入测试次数：'))
     #计算UAV半径
-    UAVradius = 1200.0 / DR
-    totalTime = .0
-    count = .0
-    usersLoc = []
+    UAVradius = 1200 / DR
+    totalTime = 0
+    count = 0
+    usersLoc = [ ]
     for i in range(testCount):
         if c == '1':
             #随机生成用户
@@ -499,8 +496,8 @@ def main():
         start = time.time()
         UAVsLoc = planningUAV(usersLoc)
         end = time.time()
-        totalTime = totalTime + (end - start)
-        count = count + len(UAVsLoc)
+        totalTime += end - start
+        count += len(UAVsLoc)
     print('{}次测试的平均耗时为{:.3f}ms,平均需要{}架无人机。'.format(testCount,totalTime * 1000 / testCount,count / testCount))
 
     #无人机初始位置
@@ -509,7 +506,7 @@ def main():
 
     #glutInit(sys.argv)
     # 初始化
-    glutInit([])
+    glutInit([ ])
     # 设置图形显示模式
     # GLUT_RGBA建立RGBA模式的窗口
     # GLUT_DOUBLE使用双缓存，以避免把计算机作图的过程都表现出来，或者为了平滑地实现动画

@@ -10,7 +10,7 @@ import numpy as np
 import random
 import time
 class particleSystem(object):
-    def __init__(this,len=1):
+    def __init__(this,len = 1):
         this.length = len 
         this.cparticles = [0.0] * 7 * len
         this.nparticles = [0.0] * 7 * len
@@ -104,7 +104,7 @@ class gpgpubasic(object):
             this.width = int(args[0])
             this.height = int(args[1])
             this.data = args[2]  
-        this.imagedata = []
+        this.imagedata = [ ]
         for i in range(this.height):
             for j in range(this.width):
                 index = i * this.width + j
@@ -181,7 +181,8 @@ class gpgpubasic(object):
         glBindFramebuffer(GL_FRAMEBUFFER,this.fbo)
         glReadBuffer(GL_COLOR_ATTACHMENT0)
         data = glReadPixels(0, 0, this.width, this.height,GL_RGBA,GL_FLOAT)  
-        #print ("fbo data:",type(data),len(data),data[0],data[1]) #,data[2],data[3]
+        #print ("fbo data:",type(data),len(data),data[0],data[1])
+        ##,data[2],data[3]
         glPopAttrib()
         glBindFramebuffer(GL_FRAMEBUFFER,0)   
         #close fbo
@@ -247,7 +248,7 @@ class gpgpupingpong(object):
             this.width = int(args[0])
             this.height = int(args[1])
             this.data = args[2]  
-        this.imagedata = []
+        this.imagedata = [ ]
         for i in range(this.height):
             for j in range(this.width):
                 index = i * this.width + j

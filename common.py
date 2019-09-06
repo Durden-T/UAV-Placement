@@ -33,8 +33,8 @@ class sphere(common):
 
 
     def createVAO(this):
-        vdata = []
-        vindex = []
+        vdata = [ ]
+        vindex = [ ]
         for y in range(this.rings):
             phi = (float(y) / (this.rings - 1)) * math.pi
             for x in range(this.segments):
@@ -134,8 +134,8 @@ class UAV(common):
         helfx = (this.xr - 1) * this.xc * 0.5
         helfy = (this.yr - 1) * this.yc * 0.5
         #print (helfx,helfy)
-        vdata = []
-        vindex = []
+        vdata = [ ]
+        vindex = [ ]
 
 
         for y in range(this.yr):
