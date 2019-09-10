@@ -25,7 +25,7 @@ class Texture:
         return textid
     @staticmethod
     def loadterrain(fileName,format = "L"):
-        image = open(fileName).convert("L")	
+        image = open(fileName).convert("L")    
         ix = image.size[0]
         iy = image.size[1]
         index = (len(image.im) - 1) / 2

@@ -7,6 +7,8 @@ from OpenGL.GLUT import *
 #import OpenGL.GLUT as glut
 import numpy as np
 #Python Imaging Library (PIL)
+
+
 class common:
     #判断是否已初始化
     bCreate = False

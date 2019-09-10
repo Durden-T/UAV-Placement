@@ -13,9 +13,9 @@ UAV_v = """
         uniform sampler2D tex1;       
         void main() {            
             gl_TexCoord[0] = gl_MultiTexCoord0; 
-		    vec4 v = vec4(gl_Vertex);		
-		    //v.y = texture2D(tex1, gl_TexCoord[0].st).r/256.0;
-		    gl_Position = gl_ModelViewProjectionMatrix * v;
+            vec4 v = vec4(gl_Vertex);        
+            //v.y = texture2D(tex1, gl_TexCoord[0].st).r/256.0;
+            gl_Position = gl_ModelViewProjectionMatrix * v;
         }"""
 
 UAV_f = """
@@ -43,11 +43,11 @@ update_v = """
         uniform mat4 pMatrix;
         out vec4 o_color;          
         void main() {      
-		    vec4 pos = vec4(vectpos,1.0);              
+            vec4 pos = vec4(vectpos,1.0);              
             vec2 uv = vec2(xz/vec2(xw,yw) + vec2(0.5,0.5));
             uv.y = 1.0 - uv.y;
             vec3 rgb =  texture2D(tex0, uv).rgb;
-		    pos.y = pos.y + sphereRadius + rgb.r;//height;//
+            pos.y = pos.y + sphereRadius + rgb.r;//height;//
             o_color = vec4(uv.x, uv.y, rgb.r, 1);
             gl_Position = pMatrix * vMatrix * mMatrix * pos;
         }"""
@@ -77,11 +77,11 @@ update_v1 = """
         uniform mat4 pMatrix1;
         out vec4 o_color;          
         void main() {      
-		    vec4 pos = vec4(vectpos1,1.0);              
+            vec4 pos = vec4(vectpos1,1.0);              
             vec2 uv = vec2(xz1/vec2(xw1,yw1) + vec2(0.5,0.5));
             uv.y = 1.0 - uv.y;
             vec3 rgb =  texture2D(tex1, uv).rgb;
-		    pos.y = pos.y + sphereRadius1 + rgb.r;//height1;//
+            pos.y = pos.y + sphereRadius1 + rgb.r;//height1;//
             o_color = vec4(uv.x, uv.y, rgb.r, 1);
             gl_Position = pMatrix1 * vMatrix1 * mMatrix1 * pos;
         }"""
@@ -105,7 +105,7 @@ gpgpu_v = """
             //vec2 xy = v.xy;
             //vec2 uv = vec2(xy/vec2(xw,yw)).xy;
             //o_color = texture2D(tex0, uv);
-		    gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
+            gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
         }"""
 
 gpgpu_f = """
