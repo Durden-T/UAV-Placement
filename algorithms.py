@@ -5,7 +5,7 @@ from math import ceil,atan2
 #精度控制
 eps = 1e-6
 #条带放置算法中划分条带的比例
-k = 3 ** 0.5 / 2
+k = 1
 #UAV半径
 UAVradius = 0
 
