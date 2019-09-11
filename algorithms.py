@@ -1,6 +1,6 @@
 from functools import cmp_to_key,partial
 import random
-from math import ceil
+from math import ceil,atan2
 
 #精度控制
 eps = 1e-6
@@ -95,25 +95,6 @@ def spiralPlanning(users,r):
 
 
 def disks(cur,strip):
-    #covered = [ ]
-    #tmp = covered
-    #tmp.append(cur)
-    #ans = oneCenter(tmp)
-    #while ans[1] <= UAVradius:
-    #    covered.append(cur)
-    #    for user in strip.copy():
-    #        if distance(user,ans[0]) <= UAVradius:
-    #            strip.remove(user)
-    #    if strip:
-    #        cur = strip[0]
-    #        tmp = covered
-    #        tmp.append(cur)
-    #        ans = oneCenter(tmp)
-    #    else:
-    #        break
-
-    #return ans[0]
-
     covered = [cur]
     ans = oneCenter(covered)
     while ans[1] <= UAVradius:
@@ -126,7 +107,6 @@ def disks(cur,strip):
             ans = oneCenter(covered)
         else:
             break
-    
     return ans[0]
 
 
@@ -201,6 +181,7 @@ def cross(center,a,b):
 def compare_angle(o,a,b):
     t = cross(o,a,b)
     return -1 if (t > 0 or (t == 0 and distance(a,o) < distance(b,o))) else 1
+
 
 #解决凸包问题
 #users 用户位置list

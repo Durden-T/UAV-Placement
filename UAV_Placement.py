@@ -48,8 +48,6 @@ x = 0
 z = 0
 
 
-
-
 def make_UAV(UAV):
     UAV.move_active += 1
     if UAV.move_active == 250:
