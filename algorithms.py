@@ -1,12 +1,11 @@
 from functools import cmp_to_key,partial
-import common
 import random
 from math import ceil
 
 #精度控制
 eps = 1e-6
 #条带放置算法中划分条带的比例
-k = 1 / 1.5
+k = 3 ** 0.5 / 2
 #UAV半径
 UAVradius = 0
 
@@ -17,9 +16,11 @@ def randomPlanning(users,r):
     UAVradius = r
     UAVsLoc = [ ]
     while users:
-        center = [random.uniform(1,1200),random.uniform(1,1200)]
-        while UAVsLoc and any(distance(center,UAV) <= UAVradius for UAV in UAVsLoc):
-            center = [random.uniform(1,1200),random.uniform(1,1200)]
+        #center = [random.uniform(1,1200),random.uniform(1,1200)]
+        #while UAVsLoc and any(distance(center,UAV) <= UAVradius for UAV in
+        #UAVsLoc):
+        #    center = [random.uniform(1,1200),random.uniform(1,1200)]
+        center = random.choice(users)
         UAVsLoc.append(center)
         for user in users.copy():
             if distance(user,center) <= UAVradius:
@@ -41,16 +42,16 @@ def stripPlanning(users,r):
         strips[int(user[1] / width)].append(user)
     
     #每条条带单独放置UAV
-    UAVsLoc = [[ ] for i in range(count)]
+    UAVsLoc = [ ]
 
-    for i,strip in enumerate(strips):
+    for strip in strips:
         strip.sort()
         while strip:
             #取最左边的点
             leftmost = strip[0]
-            UAVsLoc[i].append(rectangles(leftmost,strip,width))
-
-    return [UAVloc for strip in UAVsLoc for UAVloc in strip]
+            #UAVsLoc.append(rectangles(leftmost,strip,width))
+            UAVsLoc.append(disks(leftmost,strip))
+    return UAVsLoc
 
 
 #users 用户位置list
@@ -93,12 +94,49 @@ def spiralPlanning(users,r):
     return UAVsLoc
 
 
-def rectangles(cur,strip,width):
-    ans = [cur[0] + ((1 - k ** 2) ** 0.5 * 2 * UAVradius) / 2,int(cur[1] / width) * width + width / 2]
-    for user in strip.copy():
-        if distance(ans,user) <= UAVradius:
-            strip.remove(user)
-    return ans
+def disks(cur,strip):
+    #covered = [ ]
+    #tmp = covered
+    #tmp.append(cur)
+    #ans = oneCenter(tmp)
+    #while ans[1] <= UAVradius:
+    #    covered.append(cur)
+    #    for user in strip.copy():
+    #        if distance(user,ans[0]) <= UAVradius:
+    #            strip.remove(user)
+    #    if strip:
+    #        cur = strip[0]
+    #        tmp = covered
+    #        tmp.append(cur)
+    #        ans = oneCenter(tmp)
+    #    else:
+    #        break
+
+    #return ans[0]
+
+    covered = [cur]
+    ans = oneCenter(covered)
+    while ans[1] <= UAVradius:
+        for user in strip.copy():
+            if distance(user,ans[0]) <= UAVradius:
+                strip.remove(user)
+        if strip:    
+            cur = strip[0]
+            covered.append(cur)
+            ans = oneCenter(covered)
+        else:
+            break
+    
+    return ans[0]
+
+
+#def rectangles(cur,strip,width):
+#    ans = [cur[0] + ((1 - k ** 2) ** 0.5 * 2 * UAVradius) / 2,int(cur[1] /
+#    width) * width + width / 2]
+#    for user in strip.copy():
+#        if distance(ans,user) <= UAVradius:
+#            strip.remove(user)
+#    return ans
 
 
 #用于求差集
