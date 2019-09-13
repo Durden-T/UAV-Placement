@@ -41,7 +41,6 @@ def stripPlanning(users,r):
     for user in users:
         strips[int(user[1] / width)].append(user)
     
-    #每条条带单独放置UAV
     UAVsLoc = [ ]
 
     for strip in strips:

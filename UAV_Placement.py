@@ -1,15 +1,15 @@
+import sys
+import copy
+import time
+
+import numpy as np
+from tqdm import trange
+
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
 from OpenGL.GL import shaders
 from PIL.Image import *
-
-import sys
-import numpy as np
-
-import copy
-import time
-
 
 from algorithms import strategies
 import common
@@ -331,7 +331,8 @@ def main( ):
         totalTime = 0
         count = 0
 
-        for i in range(testCount):
+        #trange展示进度条
+        for i in trange(testCount,ascii = True,unit=''):
             if c == '1':
                 #随机生成用户
                 usersLoc = getUserRandom(userNum)
@@ -354,7 +355,9 @@ def main( ):
         for strategy in strategies:
             totalTime = 0
             count = 0
-            for i in range(testCount):
+
+            #trange展示进度条
+            for i in trange(testCount,ascii = True,unit=''):
                 if c == '1':
                     #随机生成用户
                     usersLoc = getUserRandom(userNum)
